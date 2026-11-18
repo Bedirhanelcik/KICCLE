@@ -1,0 +1,1258 @@
+/*
+ * Package B: showroom stage. Prefix sr- / --sr-.
+ *
+ * Geometry comes from layout.ts as px custom properties on #k-stage:
+ *   --sr-u (unit width), --sr-gx/--sr-gy, --sr-fig-h, --sr-sole-y, --sr-unit-h,
+ *   --sr-wall-w, --sr-grid-x, --sr-row0/--sr-row1, --sr-track-y, --sr-lens-y,
+ *   --sr-horizon, --sr-cone-deg, --sr-cone-len, --sr-cone-w, --sr-label-h,
+ *   --sr-slab-r, --sr-top-r (unit ratios).
+ *
+ * Rules kept here (CONTRACTS §5):
+ *   - nothing ever writes transform / transform-origin / will-change on .sr-unit
+ *   - no ancestor of a unit is transformed; between a unit and #k-stage nothing
+ *     clips except .sr-scroller, which covers the full viewport (inset: 0)
+ *   - every glow is a gradient or box-shadow sized in units of --sr-u, so it
+ *     scales cleanly with the camera zoom (no raster blur filters)
+ */
+
+.sr-stage {
+  --sr-warm: 255 241 224; /* tungsten white, rgb triplet */
+  --sr-ember: 255 112 26; /* LED orange light, rgb triplet */
+  --sr-fx-w: clamp(11px, calc(var(--sr-u, 200px) * 0.08), 24px);
+  --sr-top: calc(var(--sr-u) * var(--sr-top-r)); /* half depth of the plinth top face */
+  --sr-slab: calc(var(--sr-u) * var(--sr-slab-r)); /* plinth thickness */
+  --sr-led-in: var(--dur-slow);
+  /* a lamp cools slower than the next one warms: the light reads as travelling */
+  --sr-cool: calc(var(--dur-sweep) * 1.6) var(--ease-in-out);
+  --sr-warmup: var(--dur-sweep) var(--ease-light);
+  --sr-led-out: 760ms;
+  background: var(--navy-900);
+}
+
+/* ------------------------------------------------------------------ room */
+.sr-room,
+.sr-atmos {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ camera
+   THE LENS. Two nested full-viewport layers that hold the entire scene: the
+   room photograph, the overhead lights, the shelves and all ten pairs.
+
+     .sr-camera         C writes the flight into a selected pair here.
+     .sr-camera__dolly  B writes its own opening push-in here.
+
+   Both are anchored at the stage's top-left with transform-origin 0 0, so a
+   `translate(x, y) scale(s)` on either maps every object in the room by the
+   same matrix. That is the whole design: the room is not redrawn, re-lit or
+   replaced when a pair is selected, and no sneaker is ever moved relative to
+   another. The camera moves; the exhibition stands still.
+
+   Nothing in here transitions on its own — a CSS transition would fight the
+   WAAPI dolly for the same property. */
+.sr-camera,
+.sr-camera__dolly {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  /* `will-change` is set by whoever is moving the layer, for as long as the
+     move lasts, and dropped afterwards — two permanently promoted
+     full-viewport layers cost memory all the time and stop the browser
+     re-rasterising the room crisply once the camera has settled. */
+}
+.sr-room > span {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.sr-room__photo {
+  /* THE ROOM. A photograph of a real exhibition hall — back wall, side
+     returns, reflective floor — cover-fitted behind everything. The layout
+     reads its wall/floor junction (87% of the image height) and composes the
+     two tiers above that line, so the shelves hang on the wall in the picture
+     and the floor stays visible underneath.
+
+     Nothing flat is painted over it: the surfaces below are transparent
+     grading passes, so the plaster and the floor reflections survive. */
+  inset: 0;
+  background-image: url('../../../public/images/newbg.png');
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-size: cover;
+  /* Fallback before the photo paints, and if it is ever missing: the same
+     charcoal values the picture averages to, so nothing flashes blue. */
+  background-color: #090a0c;
+}
+.sr-room__wall {
+  top: 0;
+  height: var(--sr-horizon);
+  /* A grading pass, not a surface — and a very light one. The photograph is
+     already exposed for this room: a charcoal plaster wall that falls off to
+     near-black in both corners. Anything heavier here either crushes the
+     plaster to flat black or (worse) lifts it into a grey wash. So this does
+     exactly two things the picture cannot do on its own:
+       1. deepen the LOWER wall, so the large empty band under the second tier
+          reads as unlit room rather than as more wall;
+       2. pull the two side returns down further still, because the grid now
+          runs much closer to the edges of the frame than the photo expects. */
+  background:
+    linear-gradient(180deg, transparent 0%, transparent 42%, rgb(0 0 0 / 0.22) 70%, rgb(0 0 0 / 0.46) 100%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.88) 0%, rgb(0 0 0 / 0.6) 4%, rgb(0 0 0 / 0.26) 10%, transparent 20%, transparent 80%, rgb(0 0 0 / 0.26) 90%, rgb(0 0 0 / 0.6) 96%, rgb(0 0 0 / 0.88) 100%);
+}
+.sr-room__ceiling {
+  /* The photograph's own ceiling is already black and carries no fixtures, so
+     there is nothing to kill. Darkening it here would also swallow the top of
+     every beam, which is the brightest part of the reference lighting. */
+  display: none;
+}
+.sr-room__floor {
+  top: var(--sr-horizon);
+  bottom: 0;
+  /* The floor must stay visibly part of the same room (it is the only thing
+     proving the wall ends), so it is only steered: the corners go down with
+     the wall's corners, and the very bottom edge falls away into the frame. */
+  background:
+    linear-gradient(180deg, transparent 0%, transparent 34%, rgb(0 0 0 / 0.26) 78%, rgb(0 0 0 / 0.52) 100%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.9) 0%, rgb(0 0 0 / 0.62) 4%, rgb(0 0 0 / 0.28) 11%, transparent 22%, transparent 78%, rgb(0 0 0 / 0.28) 89%, rgb(0 0 0 / 0.62) 96%, rgb(0 0 0 / 0.9) 100%);
+}
+.sr-room__horizon {
+  /* The photograph draws its own wall/floor junction; this only seats it, with
+     a shallow contact shadow where the wall meets the floor. */
+  top: calc(var(--sr-horizon) - 26px);
+  height: 34px;
+  background: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 0.3) 76%, rgb(0 0 0 / 0.12) 100%);
+}
+
+/* ------------------------------------------------------------------ scroller + wall */
+.sr-scroller {
+  position: absolute;
+  inset: 0; /* covers the whole viewport: clipping here never cuts anything visible */
+  /* wall mode: clip (not a scroll container), so light boxes and C's zoomed unit
+     never create scrollable overflow that a focus() could scroll */
+  overflow: clip;
+}
+.sr-stage[data-mode='pan'] .sr-scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.sr-stage[data-mode='pan'] .sr-scroller::-webkit-scrollbar {
+  display: none;
+}
+/* Focus mode: freeze panning (still inset: 0, so the zoomed unit is not cut). */
+.sr-stage.is-focus-mode[data-mode='pan'] .sr-scroller {
+  overflow: hidden;
+}
+.sr-wall {
+  position: relative;
+  width: var(--sr-wall-w);
+  height: 100%;
+}
+/* No ceiling track. The photograph is the ceiling, and a hairline across the
+   top of the stage reads as a header rule — which this design must not have. */
+.sr-track {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ bays (spot heads + light) */
+.sr-bays {
+  position: absolute;
+  inset: 0;
+  overflow: clip; /* cone boxes must not widen the pan range */
+  pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease-standard);
+}
+.sr-bay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--sr-grid-x) + var(--sr-col) * (var(--sr-u) + var(--sr-gx)));
+  width: var(--sr-u);
+}
+.sr-bay > span {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+/* Every light in this room is OFF until something turns it on.
+   Losing this default is what made the opening's "dark" hold a fully lit
+   room with invisible shoes in it: the beams fell back to opacity 1 whenever
+   neither [data-lit] nor the steady [data-light='even'] levels applied. */
+.sr-bay__scallop,
+.sr-bay__pool,
+.sr-bay__floor,
+.sr-bay__haze,
+.sr-bay__core {
+  top: 0;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 520ms var(--ease-light);
+}
+
+/* THE BEAM.
+   A broad exhibition spot seen as light on a wall: brightest where it leaves
+   the ceiling, opening downwards into a soft inverted V, and gone before it
+   reaches the floor.
+
+   Shape and brightness are built separately, which is the whole trick:
+
+     background  a vertical ramp — hot at the top edge, dead by the bottom.
+                 This is what makes the beam read as coming FROM the ceiling
+                 rather than as a glow sitting on the wall.
+     mask        an ellipse centred on the BOTTOM edge of the box. Its
+                 iso-contours are narrow where they pass the top of the box
+                 and widen as they fall toward the centre, so the silhouette
+                 is a cone — with edges that are feathered by construction,
+                 not clipped. (Centring the ellipse above the box, the obvious
+                 move, gives exactly the wrong taper: contours narrow as they
+                 travel away from the centre, so the beam closes downwards.)
+
+   No flat discs and no horizontal strips anywhere: every layer here is either
+   this cone or the gentle wall pool it lands in. */
+.sr-bay__haze,
+.sr-bay__core {
+  height: calc(var(--sr-row1) + var(--sr-sole-y) + var(--sr-u) * 0.85);
+}
+.sr-bay__haze {
+  /* the outer, wider, softer body of the beam */
+  left: calc(var(--sr-u) * -0.5);
+  right: calc(var(--sr-u) * -0.5);
+  background-image: linear-gradient(
+    180deg,
+    rgb(var(--sr-warm) / 0.36) 0%,
+    rgb(var(--sr-warm) / 0.4) 9%,
+    rgb(var(--sr-warm) / 0.29) 24%,
+    rgb(var(--sr-warm) / 0.17) 44%,
+    rgb(var(--sr-warm) / 0.068) 66%,
+    rgb(var(--sr-warm) / 0.018) 85%,
+    transparent 97%
+  );
+  -webkit-mask-image: radial-gradient(ellipse 34% 107% at 50% 100%, #000 0%, #000 44%, rgb(0 0 0 / 0.45) 73%, transparent 100%);
+  mask-image: radial-gradient(ellipse 34% 107% at 50% 100%, #000 0%, #000 44%, rgb(0 0 0 / 0.45) 73%, transparent 100%);
+}
+.sr-bay__core {
+  /* the hot throat: tighter and brighter, and spent by the lower tier */
+  left: calc(var(--sr-u) * -0.1);
+  right: calc(var(--sr-u) * -0.1);
+  background-image: linear-gradient(
+    180deg,
+    rgb(var(--sr-warm) / 0.48) 0%,
+    rgb(var(--sr-warm) / 0.56) 7%,
+    rgb(var(--sr-warm) / 0.37) 22%,
+    rgb(var(--sr-warm) / 0.185) 42%,
+    rgb(var(--sr-warm) / 0.062) 64%,
+    transparent 88%
+  );
+  -webkit-mask-image: radial-gradient(ellipse 40% 104% at 50% 100%, #000 0%, #000 42%, rgb(0 0 0 / 0.45) 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 40% 104% at 50% 100%, #000 0%, #000 42%, rgb(0 0 0 / 0.45) 72%, transparent 100%);
+}
+.sr-bay__scallop {
+  /* Where the beam first strikes the plaster, right under the ceiling: the
+     brightest patch in the room, and the only part of the wall that is
+     allowed to be bright. */
+  left: calc(var(--sr-u) * -0.24);
+  right: calc(var(--sr-u) * -0.24);
+  top: 0;
+  height: calc(var(--sr-row0) * 0.82);
+  background-image: radial-gradient(
+    ellipse 34% 96% at 50% -6%,
+    rgb(var(--sr-warm) / 0.66) 0%,
+    rgb(var(--sr-warm) / 0.32) 30%,
+    rgb(var(--sr-warm) / 0.1) 60%,
+    transparent 100%
+  );
+}
+.sr-bay__pool {
+  /* Where the beam lands on the pair: a wide, shallow wash on the wall behind
+     the shelf. Flat and wide, never a disc — a disc behind a product reads as
+     a vignette in a catalogue, not as a room with a light in it. */
+  left: calc(var(--sr-u) * -0.36);
+  right: calc(var(--sr-u) * -0.36);
+  height: calc(var(--sr-u) * 0.92);
+  background-image: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    rgb(var(--sr-warm) / 0.34) 0%,
+    rgb(var(--sr-warm) / 0.2) 34%,
+    rgb(var(--sr-warm) / 0.072) 62%,
+    transparent 100%
+  );
+}
+.sr-bay__pool--r0 {
+  top: calc(var(--sr-row0) + var(--sr-sole-y) - var(--sr-u) * 0.72);
+}
+.sr-bay__pool--r1 {
+  left: calc(var(--sr-u) * -0.4);
+  right: calc(var(--sr-u) * -0.4);
+  height: calc(var(--sr-u) * 1);
+  top: calc(var(--sr-row1) + var(--sr-sole-y) - var(--sr-u) * 0.78);
+  background-image: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    rgb(var(--sr-warm) / 0.28) 0%,
+    rgb(var(--sr-warm) / 0.165) 34%,
+    rgb(var(--sr-warm) / 0.06) 62%,
+    transparent 100%
+  );
+}
+.sr-bay__floor {
+  /* bounce of the wall wash onto the satin floor, short and weak */
+  left: calc(var(--sr-u) * -0.45);
+  right: calc(var(--sr-u) * -0.45);
+  top: calc(var(--sr-horizon) + 2px);
+  height: max(26px, calc((100% - var(--sr-horizon)) * 0.6));
+  background-image:
+    radial-gradient(50% 58% at 50% 8%, rgb(var(--sr-warm) / 0.095) 0%, rgb(var(--sr-warm) / 0.03) 56%, transparent 100%),
+    /* a short wet-looking smear right at the wall/floor junction */
+    radial-gradient(34% 16% at 50% 0%, rgb(var(--sr-warm) / 0.08) 0%, transparent 100%);
+}
+
+/* Lit bay. The cone and the floor bounce follow the bay; the two display
+   pools are switched per tier, so the opening can light the upper row before
+   the lower one. */
+.sr-bay[data-lit] .sr-bay__scallop,
+.sr-bay[data-lit] .sr-bay__floor,
+.sr-bay[data-lit] .sr-bay__haze,
+.sr-bay[data-lit] .sr-bay__core {
+  opacity: 1;
+}
+.sr-bay[data-lit-r0] .sr-bay__pool--r0,
+.sr-bay[data-lit-r1] .sr-bay__pool--r1 {
+  opacity: 1;
+}
+/* ------------------------------------------------------------------ THE OPENING
+ *
+ * THE SHOES NEVER MOVE.
+ *
+ * All ten are already standing at their final coordinates before the first
+ * frame is painted. Nothing here touches `transform`, `top`, `left`, `width`
+ * or `height` on a unit, a slot or a figure — there is no entrance animation
+ * of any kind, and no product ever slides, scales or flies into place.
+ *
+ * What changes is EXPOSURE. A pair that the sequence has not reached is lit
+ * by nothing, so it is rendered at brightness 0.03: its pixels are in the
+ * scene, at full resolution, in exactly the right place, and they are black
+ * because a black room with no light in it is black. When the column's spot
+ * strikes, the exposure comes up to the standing landing value on the light's
+ * own easing curve, and the stencilled skin layer brings the overhead
+ * highlight with it.
+ *
+ * That is why the light reads as the CAUSE of the reveal rather than a
+ * ten-image fade: the thing being animated is how much light is falling on an
+ * object that was there all along. */
+/* A pair's EXPOSURE — how much light is falling on it — is written straight
+   onto .sr-unit__rim by setExposure() in index.ts, together with its own
+   transition, so the sequence cannot inherit the room's slow cooling curve.
+   Nothing here or there touches geometry: the shoes stand still throughout.
+   The glass under them follows on the same clock. */
+.sr-stage[data-ignition] .sr-unit:not([data-lit]) .sr-plinth {
+  opacity: 0.04;
+}
+.sr-stage[data-ignition] .sr-plinth {
+  transition: opacity 520ms var(--ease-light);
+}
+
+/* THE STEADY STATE, once the opening has finished (and the state reduced
+   motion goes straight to). All five bays stand at once and their beams
+   overlap, so every layer sits below its struck value — five house spots,
+   not five full ones. The composition (cone from the ceiling, lit pair, dark
+   lower wall) is identical to the animated state; only the level differs.
+   Excluded while an opening is running: these levels would light all five
+   beams at once and contradict the one thing the sequence exists for.
+
+   The levels are set so each fixture can actually be READ as a fixture: the
+   scallop where the beam strikes the plaster is the anchor, the pools under
+   the two tiers are the second-brightest thing, and the cone between them is
+   carried mostly by the wide haze rather than the hot core, which is what
+   keeps the inverted V soft-edged instead of a bright wedge. The outer room
+   is deliberately untouched by all of this — nothing here widens a layer, so
+   the room stays dark everywhere a beam is not pointing. */
+.sr-stage[data-light='even']:not([data-ignition]) .sr-bay__pool {
+  opacity: 0.95;
+}
+.sr-stage[data-light='even']:not([data-ignition]) .sr-bay__scallop {
+  opacity: 0.84;
+}
+.sr-stage[data-light='even']:not([data-ignition]) .sr-bay__haze {
+  opacity: 0.82;
+}
+.sr-stage[data-light='even']:not([data-ignition]) .sr-bay__core {
+  opacity: 0.68;
+}
+.sr-stage[data-light='even']:not([data-ignition]) .sr-bay__floor {
+  opacity: 0.66;
+}
+
+/* ------------------------------------------------------------------ grid + slots */
+.sr-grid {
+  position: absolute;
+  left: var(--sr-grid-x);
+  top: var(--sr-row0);
+  display: grid;
+  grid-template-columns: repeat(5, var(--sr-u));
+  grid-auto-rows: var(--sr-unit-h);
+  column-gap: var(--sr-gx);
+  row-gap: var(--sr-gy);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sr-slot {
+  position: relative;
+  min-width: 0;
+}
+.sr-stage[data-mode='pan'] .sr-slot[data-row='0'] {
+  scroll-snap-align: center;
+}
+.sr-slot.is-focused {
+  z-index: 5; /* contract: the focused unit is raised above its siblings */
+}
+.sr-slot.is-quiet {
+  /*
+   * Deliberately NOT dimmed and deliberately NOT moved.
+   *
+   * The pairs either side of the one being approached stay exactly where they
+   * stand in the room, at full brightness; the camera is simply close enough
+   * that only a toe or a heel of each is still in frame, and the rows above
+   * and below have travelled out of it. Dimming them would give the game away
+   * — it would read as objects being switched off rather than as a lens
+   * moving in. All that changes is that they stop being click targets.
+   */
+  pointer-events: none;
+}
+.sr-slot.is-quiet .sr-unit {
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ unit */
+.sr-unit {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--text-2);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  outline-offset: 4px;
+  border-radius: var(--radius-xs);
+}
+.sr-unit__shoe {
+  position: relative;
+  z-index: 2;
+  /*
+   * EXPOSURE ONLY.
+   *
+   * This is the single thing a filter is allowed to do here: say how much
+   * light is falling on the object. All of the DIRECTION — where the light
+   * comes from, which surfaces catch it, what falls into shadow — is carried
+   * by the two stencilled layers below, because a filter cannot tell the top
+   * of a shoe from its sole, and a room where it tries always looks flat.
+   * The gap between lit and unlit is deliberately small for that reason.
+   */
+  filter: brightness(0.5) contrast(1.04) saturate(0.84);
+  transition: filter var(--sr-cool);
+}
+.sr-unit[data-lit] .sr-unit__shoe {
+  /* The landing exposure the brief asks for: ~90% perceived brightness, with
+     the colours left alone. No dimming layer, no overlay, no drop shadow —
+     just how much light is falling on the object. */
+  filter: brightness(0.9) contrast(1.04) saturate(1);
+}
+/*
+ * The pair the camera is looking at gets a little more light on it — the spot
+ * is, after all, now pointed at it and nothing else. Controlled: one stop, not
+ * a spotlight-on-a-stage jump.
+ *
+ * It is expressed ONLY here, on `.is-focused`, and `.is-focused` is removed by
+ * setFocus(null) on the way out. There is no second overlay, no pseudo-element
+ * and no inline style to clean up, so returning to the showroom cannot leave a
+ * pair looking darker (or lighter) than it started — the rule simply stops
+ * matching and the standing `[data-lit]` exposure above takes over again.
+ */
+.sr-unit.is-focused .sr-unit__shoe {
+  filter: brightness(1.08) contrast(1.05) saturate(1.02);
+}
+.sr-unit.is-focused .sr-unit__skin {
+  opacity: calc(var(--sr-skin-k, 1) * 1.15);
+}
+.sr-unit__rim {
+  /* The box the stencils register against: same size as the figure, because
+     the figure fills its width and carries the shared aspect ratio. */
+  position: relative;
+  display: block;
+  filter: none; /* a drop-shadow here haloes the sneaker's alpha edge */
+}
+
+/* ---------------------------------------------------- light on the product */
+.sr-unit__skin,
+.sr-unit__skin {
+  z-index: 3; /* over the photograph, under nothing else */
+  /* The spot is overhead and slightly in front: uppers and toe boxes catch
+     it, the midsole gets a little, under the sole gets none. `screen` adds
+     light instead of painting over the material, so suede stays suede —
+     but it also desaturates anything it lands on hard, so the ramp is kept
+     low: enough to say where the light is coming from, not enough to bleach
+     a pale upper into grey. */
+  background-image:
+    linear-gradient(
+      176deg,
+      rgb(255 243 226 / 0.38) 0%,
+      rgb(255 240 220 / 0.23) 17%,
+      rgb(255 236 212 / 0.105) 38%,
+      rgb(255 232 206 / 0.032) 58%,
+      transparent 74%
+    ),
+    radial-gradient(58% 32% at 46% 6%, rgb(255 250 242 / 0.24) 0%, transparent 100%);
+  mix-blend-mode: screen;
+}
+/*
+ * THE NINE PAIRS THE CAMERA IS NOT LOOKING AT.
+ *
+ * `mix-blend-mode` forces the compositor to read back what is underneath
+ * before it can draw, and ten of them inside the one layer the camera scales
+ * means the whole scene has to be re-composited as the scale changes. While
+ * the camera is flying only the selected pair needs its light modelled, so
+ * the other nine drop their blend entirely — `visibility` rather than
+ * `display`, so nothing is laid out again mid-flight.
+ */
+.sr-stage[data-flying] .sr-slot.is-quiet .sr-unit__skin,
+.sr-stage.is-focus-mode .sr-slot.is-quiet .sr-unit__skin {
+  visibility: hidden;
+}
+.sr-unit[data-lit] .sr-unit__skin,
+.sr-unit.is-focused .sr-unit__skin {
+  opacity: var(--sr-skin-k, 1);
+}
+/* Less light reaches the lower tier — it is further from the heads and the
+   upper shelf is in the way. The products stay fully present; what changes is
+   how much of the beam lands on them. */
+.sr-slot[data-row='1'] .sr-unit {
+  --sr-skin-k: 0.62;
+}
+
+/* ------------------------------------------------------------------ acrylic plinth */
+.sr-plinth {
+  /* The shelf is as long as the shoe, not as long as the cell: the frame keeps
+     90% of its width for the sneaker itself (SHOE_FRAME.contentWidth), so the
+     glass stops just past the toe and the heel instead of running the full bay. */
+  position: absolute;
+  z-index: 1;
+  left: 5.5%;
+  right: 5.5%;
+  top: calc(var(--sr-sole-y) - var(--sr-top));
+  height: calc(var(--sr-top) * 2 + var(--sr-slab));
+  pointer-events: none;
+}
+.sr-plinth > span {
+  position: absolute;
+  display: block;
+}
+.sr-plinth__cast {
+  /* the floating shelf's soft shadow on the wall below it */
+  left: 6%;
+  right: 6%;
+  top: calc(100% - 2px);
+  height: calc(var(--sr-u) * 0.16);
+  background: radial-gradient(50% 100% at 50% 0%, rgb(4 8 16 / 0.3) 0%, rgb(4 8 16 / 0.1) 45%, transparent 100%);
+  opacity: 0.5;
+  transition: opacity var(--sr-cool);
+}
+.sr-unit[data-lit] .sr-plinth__cast,
+.sr-unit.is-focused .sr-plinth__cast {
+  opacity: 1;
+}
+.sr-plinth__top {
+  /* top face seen just from above: narrower back edge, bright polished front edge */
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(var(--sr-top) * 2);
+  clip-path: polygon(1.6% 0, 98.4% 0, 100% 100%, 0 100%);
+  background:
+    linear-gradient(0deg, rgb(255 255 255 / 0.5) 0 1px, transparent 1px),
+    linear-gradient(90deg, transparent 0%, rgb(var(--sr-warm) / 0.08) 30%, rgb(var(--sr-warm) / 0.14) 55%, transparent 85%),
+    linear-gradient(180deg, rgb(196 214 255 / 0.05) 0%, rgb(214 228 255 / 0.15) 100%);
+}
+.sr-plinth__top::after {
+  /* the spot lands on the top face */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(50% 140% at 50% 75%, rgb(255 246 234 / 0.3) 0%, rgb(var(--sr-warm) / 0.1) 55%, transparent 100%);
+  opacity: 0;
+  transition: opacity var(--sr-cool);
+}
+.sr-unit[data-lit] .sr-plinth__top::after,
+.sr-unit.is-focused .sr-plinth__top::after {
+  opacity: 1;
+}
+.sr-plinth__top::before {
+  /* contact shadow of the sole on the top face; deepens under a spot */
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 0;
+  bottom: 0;
+  /* The only shadow a landing pair gets: the contact patch where its sole
+     meets the glass. Just enough to stop the shoe floating. */
+  background: radial-gradient(46% 62% at 50% 45%, rgb(4 8 16 / 0.55) 0%, rgb(4 8 16 / 0.22) 58%, transparent 100%);
+  opacity: 0.22;
+  transition: opacity var(--sr-cool);
+}
+.sr-unit[data-lit] .sr-plinth__top::before,
+.sr-unit.is-focused .sr-plinth__top::before {
+  opacity: 0.4;
+}
+/* The lower row sits further from the heads, so its contact patch reads a
+   little more — the only place in the room where a shadow is wanted. */
+.sr-slot[data-row='1'] .sr-unit[data-lit] .sr-plinth__top::before {
+  opacity: 0.62;
+}
+.sr-plinth__front {
+  /* front face: a thin slab of clear acrylic. Almost all of what you see is
+     edge — polished ends, a bright top arris, the dark room refracted through
+     the body — so the shelf reads as glass rather than as a painted bar. */
+  left: 0;
+  right: 0;
+  top: calc(var(--sr-top) * 2);
+  bottom: 0;
+  border-radius: 0 0 1px 1px;
+  background:
+    /* polished end grain: the brightest thing on the shelf, and only 1px of it */
+    linear-gradient(90deg, rgb(236 240 248 / 0.34) 0, rgb(236 240 248 / 0.06) max(1px, 0.8%), transparent max(3px, 2%), transparent calc(100% - max(3px, 2%)), rgb(236 240 248 / 0.06) calc(100% - max(1px, 0.8%)), rgb(236 240 248 / 0.34) 100%),
+    /* the top arris: a hairline of catch light, nothing more */
+    linear-gradient(180deg, rgb(255 255 255 / 0.42) 0, rgb(255 255 255 / 0.08) max(1px, 14%), transparent 34%, transparent 86%, rgb(236 240 248 / 0.14) 100%),
+    /* the dark room refracted through the body of the glass */
+    linear-gradient(180deg, transparent 18%, rgb(0 0 0 / 0.34) 56%, rgb(0 0 0 / 0.1) 80%, transparent 92%),
+    linear-gradient(180deg, rgb(226 232 244 / 0.045) 0%, rgb(210 218 234 / 0.016) 52%, rgb(226 232 244 / 0.035) 100%);
+  overflow: hidden;
+}
+.sr-plinth__front::after {
+  /* specular sheen: brighter when the spot is on this bay */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    /* the spot catching the polished front arris */
+    linear-gradient(180deg, rgb(255 250 240 / 0.45) 0, rgb(255 246 232 / 0.12) max(1px, 10%), transparent 34%),
+    linear-gradient(104deg, transparent 18%, rgb(255 255 255 / 0.18) 26%, rgb(255 255 255 / 0.03) 31%, transparent 38%, transparent 62%, rgb(255 255 255 / 0.08) 68%, transparent 73%);
+  opacity: 0.12;
+  transition: opacity var(--sr-cool);
+}
+.sr-unit[data-lit] .sr-plinth__front::after,
+.sr-unit.is-focused .sr-plinth__front::after {
+  opacity: 1;
+}
+.sr-plinth__led {
+  /* the strip on the underside, unlit — end to end, like the lit one */
+  left: 1.5%;
+  right: 1.5%;
+  bottom: -1px;
+  height: max(2px, calc(var(--sr-u) * 0.0115));
+  border-radius: 1px;
+  /* An LED that is OFF is a dark line, not a dim orange one. In the reference
+     only the pair being looked at has any orange on it at all; ten faintly
+     glowing strips turn the wall into a row of signage. Just enough warmth to
+     read as a filament rather than a painted stripe. */
+  background: linear-gradient(90deg, rgb(70 58 50 / 0.5) 0%, rgb(120 86 58 / 0.45) 50%, rgb(70 58 50 / 0.5) 100%);
+}
+
+/* LED light layers: off by default, ignite on hover / keyboard focus / focus mode. */
+.sr-plinth__led-lit,
+.sr-plinth__spill,
+.sr-plinth__edge-glow {
+  opacity: 0;
+  transition: opacity var(--sr-led-out) var(--ease-light);
+}
+.sr-plinth__led-lit {
+  /* A real strip, not a glow blob: a crisp hot line with a tight close bloom
+     and one wider, weak falloff. Keeping the bloom tight is what stops the
+     shelf looking like plastic lit from inside.
+
+     It runs END TO END. The strip reaches the full width of the glass with no
+     dark stub at either tip: the filament is hot right up to the last
+     millimetre and only the outermost 1.5% cools to the deep ember the
+     housing would show. The old version faded to transparent at both ends and
+     left two unlit gaps that the reference does not have. */
+  left: 1.5%;
+  right: 1.5%;
+  bottom: -1px;
+  height: max(2px, calc(var(--sr-u) * 0.0115));
+  border-radius: 1px;
+  /* Brightest wherever the pointer is (--sr-px), hot everywhere else. */
+  background:
+    radial-gradient(closest-side at var(--sr-px, 50%) 50%, #fffdf8 0%, rgb(255 246 234 / 0.6) 36%, transparent 100%),
+    linear-gradient(90deg, var(--led-deep) 0%, var(--led-core) 1.5%, var(--led-hot) 10%, var(--led-hot) 90%, var(--led-core) 98.5%, var(--led-deep) 100%);
+  box-shadow:
+    0 0 calc(var(--sr-u) * 0.02) calc(var(--sr-u) * 0.004) rgb(var(--sr-ember) / 1),
+    0 calc(var(--sr-u) * 0.006) calc(var(--sr-u) * 0.075) calc(var(--sr-u) * 0.009) rgb(var(--sr-ember) / 0.7),
+    0 calc(var(--sr-u) * 0.02) calc(var(--sr-u) * 0.17) calc(var(--sr-u) * 0.02) rgb(var(--sr-ember) / 0.3);
+}
+.sr-plinth__spill {
+  /* LED light thrown down onto the wall under the shelf: controlled, with a
+     believable inverse-square tail rather than an even orange wash */
+  left: -22%;
+  right: -22%;
+  top: calc(100% - 1px);
+  height: calc(var(--sr-u) * 0.52);
+  background:
+    radial-gradient(50% 30% at 50% 0%, rgb(255 190 134 / 0.62) 0%, rgb(var(--sr-ember) / 0.24) 62%, transparent 100%),
+    radial-gradient(68% 100% at 50% 0%, rgb(var(--sr-ember) / 0.27) 0%, rgb(var(--sr-ember) / 0.1) 30%, rgb(var(--sr-ember) / 0.022) 64%, transparent 100%);
+}
+.sr-plinth__edge-glow {
+  /* light carried through the acrylic: warm front face, glowing top edge */
+  inset: 0;
+  background:
+    linear-gradient(0deg, rgb(255 150 70 / 0.5) 0%, rgb(var(--sr-ember) / 0.2) 30%, rgb(var(--sr-ember) / 0.07) calc(100% - var(--sr-top) * 2), transparent calc(100% - var(--sr-top) * 2));
+}
+.sr-plinth__edge-glow::before {
+  /* the polished front edge of the top face catches the LED */
+  content: '';
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  top: calc(var(--sr-top) * 2 - 1px);
+  height: max(1px, calc(var(--sr-u) * 0.004));
+  background: linear-gradient(90deg, transparent, rgb(255 190 130 / 0.85) 15%, rgb(255 214 176 / 0.95) 50%, rgb(255 190 130 / 0.85) 85%, transparent);
+  box-shadow: 0 0 calc(var(--sr-u) * 0.012) rgb(var(--sr-ember) / 0.55);
+}
+.sr-plinth__edge-glow::after {
+  /* warm wash through the top face, under the sole */
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 0;
+  height: calc(var(--sr-top) * 2);
+  background: radial-gradient(50% 100% at 50% 100%, rgb(var(--sr-ember) / 0.28) 0%, transparent 100%);
+}
+
+/* Ignite: keyboard focus always; hover only on devices that really hover. */
+.sr-unit:focus-visible .sr-plinth__led-lit,
+.sr-unit:focus-visible .sr-plinth__spill,
+.sr-unit:focus-visible .sr-plinth__edge-glow,
+.sr-unit.is-focused .sr-plinth__led-lit,
+.sr-unit.is-focused .sr-plinth__spill,
+.sr-unit.is-focused .sr-plinth__edge-glow {
+  opacity: 1;
+  transition-duration: var(--sr-led-in);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sr-unit:hover .sr-plinth__led-lit,
+  .sr-unit:hover .sr-plinth__spill,
+  .sr-unit:hover .sr-plinth__edge-glow {
+    opacity: 1;
+    transition-duration: var(--sr-led-in);
+  }
+}
+/* Quiet units in focus mode never glow. */
+.sr-slot.is-quiet .sr-plinth__led-lit,
+.sr-slot.is-quiet .sr-plinth__spill,
+.sr-slot.is-quiet .sr-plinth__edge-glow {
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------ label
+   The name of the pair you are pointing at.
+
+   It is not part of the layout (LABEL_H is 0) and it never stands by itself:
+   it fades up with a short rise the moment the pointer enters a display, and
+   goes again when it leaves. Nothing is drawn on the sneaker — no outline, no
+   halo, no plate behind the type — so the product stays clean.
+
+   The two rows put it on opposite sides. For the upper row it sits ABOVE the
+   shoe, in the dark band between the header and the first shelf; for the
+   lower row it sits BELOW the shelf, in the empty room under it. Either way
+   it lands on bare wall and cannot collide with another pair or platform. */
+.sr-unit__label {
+  position: absolute;
+  z-index: 4;
+  left: -14%;
+  right: -14%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.42em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(var(--sr-label-rise, 7px));
+  transition:
+    opacity 260ms var(--ease-light),
+    transform 340ms var(--ease-out);
+}
+/* lower row: under the shelf, rising into place */
+.sr-slot[data-row='1'] .sr-unit__label {
+  top: calc(100% + var(--sr-u) * 0.1);
+}
+/* upper row: above the shoe, settling down into place */
+.sr-slot[data-row='0'] .sr-unit__label {
+  --sr-label-rise: -7px;
+  bottom: calc(100% + var(--sr-u) * 0.06);
+}
+.sr-unit__name {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(0.6875rem, calc(var(--sr-u) * 0.055), 0.875rem);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  /* the tracking is trailing, so the block would sit left of centre without this */
+  margin-right: -0.22em;
+  line-height: 1;
+  color: #ffc18a;
+  text-shadow:
+    0 0 10px rgb(255 120 36 / 0.5),
+    0 0 30px rgb(255 100 20 / 0.25);
+}
+.sr-unit__meta {
+  font-family: var(--font-display);
+  font-size: clamp(0.5rem, calc(var(--sr-u) * 0.036), 0.625rem);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  margin-right: -0.3em;
+  line-height: 1;
+  color: rgb(255 158 102 / 0.52);
+}
+/* Shown by pointer and by keyboard focus, on the same terms. */
+.sr-unit:focus-visible .sr-unit__label {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sr-unit:hover .sr-unit__label {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* In focus mode the product view names the pair; the wall caption would double it. */
+.sr-unit.is-focused .sr-unit__label,
+.sr-slot.is-quiet .sr-unit__label,
+.sr-stage[data-ignition] .sr-unit__label {
+  opacity: 0;
+  transform: translateY(var(--sr-label-rise, 7px));
+}
+
+/* ------------------------------------------------------------------ caption */
+.sr-caption {
+  /* Top-left, under the header, as an editorial standfirst — NOT a bar across
+     the bottom of the room. Nothing may read as a second section. */
+  position: absolute;
+  z-index: 3;
+  left: var(--shell-pad);
+  top: calc(var(--nav-h) + clamp(10px, 2.4vh, 26px));
+  max-width: min(28rem, calc(100% - 2 * var(--gutter)));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-slow) var(--ease-standard),
+    visibility 0s linear 0s;
+}
+.sr-stage[data-mode='pan'] .sr-caption {
+  left: var(--gutter);
+}
+.sr-caption__title {
+  order: 2;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.15rem, 0.8rem + 0.8vw, 1.6rem);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--text-1);
+}
+.sr-caption__line {
+  order: 1;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  line-height: 1.3;
+  color: var(--text-3);
+}
+.sr-stage[data-ignition] .sr-caption {
+  opacity: 0;
+}
+.sr-stage.is-focus-mode .sr-caption {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-slow) var(--ease-standard),
+    visibility 0s linear var(--dur-slow);
+}
+
+/* ------------------------------------------------------------------ ledger
+   The lower edge of the room. Three tiny lines on the dark floor: what this
+   is, what to do with it, and the way out. It is NOT a footer — no rule, no
+   background, no block of its own. Type this small is readable because there
+   is nothing else down there, which is exactly the reference's trick. */
+.sr-ledger {
+  position: absolute;
+  z-index: 5;
+  left: var(--shell-pad);
+  right: var(--shell-pad);
+  bottom: clamp(14px, 2.4vh, 26px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: var(--space-5);
+  /* the stage stays clickable everywhere the ledger has no actual text */
+  pointer-events: none;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  line-height: 1;
+  transition:
+    opacity var(--dur-slow) var(--ease-standard),
+    visibility 0s linear 0s;
+}
+.sr-ledger > * {
+  margin: 0;
+}
+.sr-ledger__id {
+  display: flex;
+  align-items: center;
+  gap: 0.85em;
+  justify-self: start;
+  color: var(--text-3);
+}
+.sr-ledger__dot {
+  /* one ember on the floor: the smallest possible piece of the LED */
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--led-core);
+  box-shadow: 0 0 6px 1px rgb(255 110 24 / 0.6);
+}
+.sr-ledger__hint {
+  justify-self: center;
+  text-align: center;
+  /* the only sentence-case line down here: it is an instruction, not a label */
+  text-transform: none;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  opacity: 0.78;
+}
+.sr-ledger__about {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  pointer-events: auto;
+  color: var(--text-3);
+  text-decoration: none;
+  outline-offset: 6px;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+.sr-ledger__about:hover,
+.sr-ledger__about:focus-visible {
+  color: var(--text-1);
+}
+.sr-ledger__arrow {
+  font-size: 1.1em;
+  line-height: 0;
+  /* the tracking is trailing; the arrow would otherwise float away from the word */
+  margin-left: -0.3em;
+}
+/* Below the content width the hint has nowhere to go: drop it rather than
+   let three lines collide. The same sentence is on the About page. */
+@media (max-width: 759.98px) {
+  .sr-ledger {
+    left: var(--gutter);
+    right: var(--gutter);
+    grid-template-columns: 1fr auto;
+    letter-spacing: 0.16em;
+  }
+  /* On a phone the grid scrolls underneath the ledger, which is pinned to the
+     stage and has no ground of its own -- the product names ran straight
+     through "SERIES 01 / 10 SILHOUETTES". A short gradient rather than a bar,
+     so the room still reads as a dark room and nothing gains a visible edge. */
+  .sr-ledger::before {
+    content: '';
+    position: absolute;
+    left: calc(var(--gutter) * -1);
+    right: calc(var(--gutter) * -1);
+    top: -20px;
+    bottom: -12px;
+    background: linear-gradient(180deg, rgb(8 8 10 / 0) 0%, rgb(8 8 10 / 0.82) 48%, rgb(8 8 10 / 0.95) 100%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .sr-ledger__hint {
+    display: none;
+  }
+}
+/* It belongs to the room, so it comes up with the room and leaves with it. */
+.sr-stage[data-ignition] .sr-ledger {
+  opacity: 0;
+}
+.sr-stage.is-focus-mode .sr-ledger {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-slow) var(--ease-standard),
+    visibility 0s linear var(--dur-slow);
+}
+
+/* ------------------------------------------------------------------ focus mode: quiet room */
+/*
+ * Focus mode keeps the lights ON.
+ *
+ * Taking the whole bay layer down to 14% used to flatten the room the moment
+ * a pair was selected — and the first thing it killed was the pool of light
+ * on the wall directly behind the selected shoe, which is exactly the thing
+ * that makes the close-up read as a lit object in a real room rather than a
+ * cut-out on a dark field. The camera creates the depth here, not a dimmer.
+ *
+ * So: the bay the camera is looking at burns at full strength, and only the
+ * bays that have travelled out of frame are eased back — enough to stop their
+ * beams competing at the edges, nowhere near enough to put the room out.
+ */
+.sr-stage.is-focus-mode .sr-bays {
+  opacity: 1;
+}
+.sr-stage.is-focus-mode .sr-bay:not([data-focus]) {
+  opacity: 0.55;
+}
+.sr-stage.is-focus-mode .sr-bay[data-focus] {
+  opacity: 1;
+}
+.sr-bay {
+  transition: opacity 200ms var(--ease-light);
+}
+.sr-stage.is-focus-mode .sr-track {
+  opacity: 0.5;
+}
+
+/* ------------------------------------------------------------------ the flight window
+   While `data-flying` is set the camera is travelling, and the whole scene is
+   a single composited layer being scaled. A property still transitioning
+   inside that layer forces it to be re-rastered every frame — which is both
+   the stutter and the softness, because the browser falls back to scaling a
+   stale, lower-resolution texture.
+
+   So everything inside settles inside the first fifth of the move, while the
+   camera is still near its starting scale and a repaint is cheap. The camera
+   transform itself is untouched: it is the only thing left animating, which
+   is exactly what a compositor is good at. */
+.sr-stage[data-flying] .sr-bay,
+.sr-stage[data-flying] .sr-unit__shoe,
+.sr-stage[data-flying] .sr-unit__skin,
+.sr-stage[data-flying] .sr-unit__label,
+.sr-stage[data-flying] .sr-plinth__cast,
+.sr-stage[data-flying] .sr-plinth__led-lit,
+.sr-stage[data-flying] .sr-plinth__spill,
+.sr-stage[data-flying] .sr-plinth__edge-glow,
+.sr-stage[data-flying] .sr-plinth__top::after,
+.sr-stage[data-flying] .sr-plinth__top::before,
+.sr-stage[data-flying] .sr-plinth__front::after {
+  transition-duration: 200ms;
+}
+
+/* ------------------------------------------------------------------ atmosphere */
+.sr-atmos {
+  z-index: 4;
+  /* The room layer already darkens the returns and the bottom edge, so this is
+     only the lens: a wide, late vignette that keeps both side edges in deep
+     shadow (as in the reference) without closing in on the floor. */
+  background:
+    linear-gradient(180deg, transparent 80%, rgb(2 2 3 / 0.26) 95%, rgb(2 2 3 / 0.44) 100%),
+    radial-gradient(150% 110% at 50% 46%, transparent 62%, rgb(2 2 3 / 0.26) 85%, rgb(2 2 3 / 0.58) 100%);
+}
+.sr-atmos::after {
+  /* static film grain */
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .8 0 0 0 0 .84 0 0 0 0 .9 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/* Warming transitions (the target state's transition applies). */
+.sr-bay[data-lit] .sr-bay__scallop,
+.sr-bay[data-lit-r0] .sr-bay__pool--r0,
+.sr-bay[data-lit-r1] .sr-bay__pool--r1,
+.sr-bay[data-lit] .sr-bay__floor,
+.sr-bay[data-lit] .sr-bay__haze,
+.sr-bay[data-lit] .sr-bay__core,
+.sr-unit[data-lit] .sr-plinth__cast,
+.sr-unit[data-lit] .sr-plinth__top::before,
+.sr-unit[data-lit] .sr-plinth__top::after,
+.sr-unit[data-lit] .sr-plinth__front::after {
+  transition: opacity var(--sr-warmup);
+}
+.sr-unit[data-lit] .sr-unit__shoe {
+  transition: filter var(--sr-warmup);
+}
+
+/* ==================================================================== mobile
+ * A PHONE IS NOT A SMALL WALL.
+ *
+ * The five-column exhibition wall is a composition for a landscape frame;
+ * squeezed onto a portrait screen it became a horizontally panning strip that
+ * showed two pairs at a time and hid the rest. So below the tablet breakpoint
+ * the ten pairs become what a phone actually reads well: a two-wide grid that
+ * scrolls down, products at one consistent size, each named underneath.
+ *
+ * Nothing about the product experience changes. The camera still flies into a
+ * tapped pair — `getRestRect` measures the slot and divides the camera out, so
+ * it aims at wherever this arrangement put it — and Back still reverses it.
+ * The room, its darkness and its overhead light stay exactly as they are.
+ * ==================================================================== */
+@media (max-width: 759.98px) {
+  /* The wall scrolls vertically now, and nothing pans sideways. */
+  .sr-stage[data-mode='pan'] .sr-scroller,
+  .sr-scroller {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: none;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sr-wall {
+    width: 100%;
+    height: auto;
+    min-height: 100%;
+    /* The grid's breathing room lives here rather than on .sr-grid itself:
+       the list already carries a `padding: 0` reset from its base rule and
+       re-stating it there proved unreliable. .sr-wall has no padding of its
+       own anywhere, so this is uncontested. */
+    box-sizing: border-box;
+    padding-top: 104px;
+    padding-bottom: 96px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  /* The five-column beam rig belongs to the wall composition; on a grid it
+     would light nothing in particular, so each pair carries its own pool. */
+  .sr-bays {
+    display: none;
+  }
+  .sr-grid {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: auto;
+    column-gap: clamp(10px, 3vw, 18px);
+    row-gap: clamp(18px, 5vw, 30px);
+  }
+  .sr-slot {
+    /* The unit box was sized in wall units; on the grid the column is the
+       measure and the shoe keeps the shared frame's aspect. */
+    height: auto;
+  }
+  .sr-unit {
+    height: auto;
+    display: grid;
+    gap: 0;
+  }
+  .sr-unit__shoe {
+    position: relative;
+    z-index: 2;
+  }
+  /* Each pair gets the overhead pool that the bay rig used to give it. */
+  .sr-unit::before {
+    content: '';
+    position: absolute;
+    left: -6%;
+    right: -6%;
+    top: -18%;
+    bottom: -4%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(46% 38% at 50% 26%, rgb(var(--sr-warm) / 0.17) 0%, rgb(var(--sr-warm) / 0.06) 46%, transparent 76%),
+      radial-gradient(62% 26% at 50% 76%, rgb(var(--sr-warm) / 0.1) 0%, transparent 78%);
+    opacity: 0;
+    transition: opacity 520ms var(--ease-light);
+  }
+  .sr-unit[data-lit]::before {
+    opacity: 1;
+  }
+  /* The shelf sits under the shoe at grid scale. */
+  .sr-plinth {
+    left: 4%;
+    right: 4%;
+    top: auto;
+    bottom: var(--sr-label-space, 34px);
+    height: 5px;
+  }
+  /* On a touch screen there is no hover, so the name is simply always there:
+     small, quiet, directly under its pair. */
+  .sr-unit__label {
+    position: static;
+    opacity: 1;
+    transform: none;
+    margin-top: 10px;
+    gap: 0.3em;
+    left: auto;
+    right: auto;
+  }
+  .sr-unit__name {
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    margin-right: -0.16em;
+    color: var(--text-1);
+    text-shadow: none;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+  }
+  .sr-unit__meta {
+    font-size: 0.5625rem;
+    letter-spacing: 0.2em;
+    margin-right: -0.2em;
+    color: var(--text-3);
+    white-space: normal;
+    text-align: center;
+  }
+  /* The caption and the ledger are desktop furniture; the grid needs the room. */
+  .sr-caption {
+    top: calc(var(--nav-h) + 6px);
+    /* Above the pair labels (4), which are part of the scrolling grid and
+       travel up through this band; the ledger already clears them at 5. */
+    z-index: 6;
+  }
+  /* The counterpart of the ledger scrim at the other end of the scroll: the
+     header and this standfirst are both transparent, and the grid travels
+     behind them. The gradient starts at the very top of the stage so it sits
+     behind the (also transparent) header, and fades out below the caption. */
+  .sr-caption::before {
+    content: '';
+    position: absolute;
+    /* The caption is only as wide as its own text, so the scrim cannot be
+       hung off its edges the way the full-width ledger's is -- it has to
+       reach both walls of the stage on its own. */
+    left: -50vw;
+    right: -50vw;
+    top: calc((var(--nav-h) + 6px) * -1);
+    bottom: -26px;
+    background: linear-gradient(180deg, rgb(8 8 10 / 0.95) 0%, rgb(8 8 10 / 0.88) 52%, rgb(8 8 10 / 0) 100%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .sr-caption__title {
+    font-size: 1.05rem;
+  }
+  .sr-ledger {
+    bottom: 10px;
+  }
+  /* The room's own floor line belongs to the wall shot; on a scrolling grid it
+     would cut across the middle of the products. */
+  .sr-room__horizon {
+    display: none;
+  }
+  .sr-room__floor {
+    top: auto;
+    height: 34%;
+    bottom: 0;
+  }
+}

@@ -1,0 +1,127 @@
+/* Shared visual primitives: shoe figure, wordmark, signature, acrylic button. */
+
+/* ---- Shoe figure (see src/components/shoe-figure.ts) ---- */
+.k-shoe {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--k-shoe-ar);
+  margin: 0;
+  /* the image is positioned inside by percentages; nothing outside the frame */
+  contain: layout style;
+}
+.k-shoe__img {
+  position: absolute;
+  max-width: none;
+  /* left/top/width/height are inline percentages from placeShoe() */
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* ---- Wordmark ---- */
+.k-wordmark {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wordmark);
+  /* optical correction: trailing tracking would push the mark off-centre */
+  margin-right: calc(var(--tracking-wordmark) * -1);
+  line-height: 1;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+/*
+ * Six LED letters. Each one is independently switchable: --k-led is 0 (clean
+ * warm white) or 1 (lit, in --k-led-tone), and data-flash drives the
+ * all-together flash at the end of the loop's second phase. The controller
+ * (components/logo-loop.ts) only ever writes those two things.
+ */
+.k-wordmark__ch {
+  display: inline-block;
+  color: #f4f1ec;
+  text-shadow: none;
+  /* Slower and softer than before: the sign should look like filaments
+     warming and cooling, not like pixels switching. */
+  transition:
+    color 340ms var(--ease-light),
+    text-shadow 340ms var(--ease-light),
+    opacity 160ms linear;
+}
+.k-wordmark__ch[style*='--k-led: 1'],
+.k-wordmark__ch[style*='--k-led:1'] {
+  color: var(--k-led-tone, var(--led-core));
+  text-shadow:
+    0 0 7px rgb(255 150 70 / 0.65),
+    0 0 20px rgb(255 110 24 / 0.4),
+    0 0 46px rgb(255 100 20 / 0.2);
+}
+.k-wordmark__ch[data-flash='on'] {
+  color: var(--led-hot);
+  text-shadow:
+    0 0 9px rgb(255 160 80 / 0.9),
+    0 0 26px rgb(255 110 24 / 0.6),
+    0 0 60px rgb(255 100 20 / 0.32);
+}
+.k-wordmark__ch[data-flash='off'] {
+  color: #4a4742;
+  text-shadow: none;
+}
+/* The I has no standing privilege any more: it is lit only when its turn
+   comes, like every other letter. In the footer lockup, where the loop never
+   runs, it keeps the old filament look as a static mark. */
+.k-lockup--footer .k-wordmark__i {
+  color: var(--led-hot);
+  text-shadow: var(--led-text-shadow);
+}
+.k-signature {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--fs-2xs);
+  letter-spacing: var(--tracking-signature);
+  margin-right: calc(var(--tracking-signature) * -1);
+  line-height: 1;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* ---- Acrylic button (shared look; packages may extend with their prefix) ---- */
+.k-button {
+  --_edge: var(--acrylic-edge);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.06em;
+  color: var(--text-1);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.10), rgb(255 255 255 / 0.02) 48%, rgb(255 255 255 / 0.05)),
+    var(--acrylic-fill);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 0 0 1px var(--_edge);
+  border-radius: var(--radius-xs);
+  transition:
+    box-shadow var(--dur-base) var(--ease-standard),
+    background-color var(--dur-base) var(--ease-standard),
+    color var(--dur-base) var(--ease-standard);
+}
+.k-button:hover {
+  --_edge: rgb(255 160 90 / 0.55);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 0 0 1px var(--_edge),
+    0 8px 30px -10px var(--led-glow);
+}
+.k-button:disabled,
+.k-button[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}

@@ -1,0 +1,356 @@
+/*
+ * Cart drawer (Package C). Prefix: ct-, --ct-.
+ * A smoked-acrylic slab sliding in from the right over the dimmed, blurred room.
+ */
+
+.ct {
+  --ct-width: min(440px, 100vw);
+  position: fixed;
+  inset: 0;
+}
+
+.ct-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(4 4 6 / 0.7);
+  -webkit-backdrop-filter: blur(6px) saturate(0.85);
+  backdrop-filter: blur(6px) saturate(0.85);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-standard);
+}
+
+.ct-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--ct-width);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 28%),
+    linear-gradient(180deg, var(--navy-800), var(--navy-850) 60%, #0b0c0e);
+  box-shadow:
+    -60px 0 120px -40px rgb(0 0 0 / 0.9),
+    inset 1px 0 0 rgb(232 236 244 / 0.18);
+  transform: translateX(104%);
+  transition: transform var(--dur-slow) var(--ease-out);
+  outline: none;
+}
+.ct[data-state='open'] .ct-scrim {
+  opacity: 1;
+}
+.ct[data-state='open'] .ct-panel {
+  transform: none;
+}
+.ct[data-state='closing'] .ct-panel {
+  transition: transform var(--dur-base) var(--ease-in);
+}
+.ct[data-state='closing'] .ct-scrim {
+  transition-duration: var(--dur-base);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ct-panel {
+    transform: none;
+    opacity: 0;
+    transition: opacity var(--dur-fast) linear;
+  }
+  .ct[data-state='open'] .ct-panel {
+    opacity: 1;
+  }
+  .ct[data-state='closing'] .ct-panel {
+    transition: opacity var(--dur-fast) linear;
+  }
+}
+
+.ct-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- head */
+.ct-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--nav-h);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-6);
+  box-shadow: inset 0 -1px 0 var(--hairline);
+}
+.ct-head__text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.ct-title {
+  font-size: var(--fs-lg);
+  line-height: 1;
+}
+.ct-title:focus {
+  outline: none;
+}
+.ct-count {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ct-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard);
+}
+.ct-close:hover {
+  color: var(--text-1);
+  background: rgb(255 255 255 / 0.05);
+}
+
+/* ------------------------------------------------------------- body */
+.ct-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+/* (.ct-body raises specificity over base.css `ul[role='list'] { padding: 0 }`) */
+.ct-body .ct-lines {
+  margin: 0;
+  padding: var(--space-2) var(--space-6);
+}
+.ct-line {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+}
+.ct-line + .ct-line {
+  border-top: 1px solid var(--hairline);
+}
+
+/* A small acrylic ledge with its LED strip lit: the same object as the showroom plinth. */
+.ct-thumb {
+  position: relative;
+  padding: 6px 4px 10px;
+  border-radius: var(--radius-xs);
+  background: radial-gradient(90% 70% at 50% 100%, var(--led-ambient), transparent 70%);
+}
+.ct-thumb .k-shoe {
+  position: relative;
+  z-index: 1;
+}
+.ct-thumb__ledge {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 4px;
+  height: 7px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.16), var(--acrylic-fill));
+  box-shadow: inset 0 0 0 1px var(--acrylic-edge);
+}
+.ct-thumb__ledge::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -1px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--led-core);
+  box-shadow: 0 0 5px 1px var(--led-glow), 0 0 14px 2px rgb(255 100 20 / 0.25);
+}
+
+.ct-line__info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ct-line__name {
+  justify-self: start;
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  line-height: 1.15;
+  text-decoration: none;
+}
+.ct-line__name:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+}
+.ct-line__meta {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.ct-line__size {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+  margin-top: 2px;
+}
+
+.ct-line__actions {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+}
+.ct-qty {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-xs);
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+}
+.ct-step {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 44px;
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+.ct-step:hover:not(:disabled) {
+  color: var(--text-1);
+}
+.ct-step:disabled {
+  color: var(--charcoal-600);
+  cursor: not-allowed;
+}
+.ct-qty__value {
+  min-width: 2ch;
+  text-align: center;
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.ct-remove {
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 0.25em;
+}
+.ct-remove:hover {
+  color: var(--text-1);
+  text-decoration-color: currentColor;
+}
+
+/* ------------------------------------------------------------- empty */
+.ct-empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+}
+.ct-empty__plinth {
+  position: relative;
+  width: 132px;
+  height: 14px;
+  margin-bottom: var(--space-4);
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.12), var(--acrylic-fill));
+  box-shadow: inset 0 0 0 1px var(--acrylic-edge), var(--shadow-contact);
+}
+.ct-empty__led {
+  /* unlit: nothing on it yet */
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--led-off);
+  box-shadow: inset 0 0 0 1px rgb(255 122 31 / 0.18);
+}
+.ct-empty__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-snug);
+}
+.ct-empty__text {
+  max-width: 34ch;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.ct-browse {
+  margin-top: var(--space-3);
+}
+
+/* ------------------------------------------------------------- foot */
+.ct-foot {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  box-shadow: inset 0 1px 0 var(--hairline);
+  background: rgb(255 255 255 / 0.03);
+}
+.ct-request {
+  width: 100%;
+  min-height: 52px;
+  font-size: var(--fs-base);
+}
+.ct-note {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.ct-status {
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+}
+.ct-status:empty {
+  display: none;
+}
+.ct-clear {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 0.25em;
+}
+.ct-clear:hover {
+  color: var(--text-1);
+}
+
+@media (max-width: 479.98px) {
+  .ct-head {
+    padding-left: var(--gutter);
+  }
+  .ct-body .ct-lines {
+    padding-inline: var(--gutter);
+  }
+  .ct-line {
+    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-areas: 'thumb info' 'actions actions';
+    row-gap: var(--space-2);
+  }
+  .ct-thumb {
+    grid-area: thumb;
+  }
+  .ct-line__info {
+    grid-area: info;
+  }
+  .ct-line__actions {
+    grid-area: actions;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .ct-foot,
+  .ct-empty {
+    padding-inline: var(--gutter);
+  }
+}

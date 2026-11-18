@@ -1,0 +1,408 @@
+/* Navigation, compact menu and footer. Owned by Package A. */
+
+/* ---- Lockup ---- */
+.k-lockup {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55em;
+}
+.k-lockup .k-wordmark {
+  font-size: 1.125rem;
+}
+.k-lockup .k-signature {
+  font-size: 0.5625rem; /* 9px: a hallmark, not a label */
+  letter-spacing: 0.5em;
+  color: var(--text-3);
+}
+
+/* ---- Nav ---- */
+.k-nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: var(--z-nav);
+  height: var(--nav-h);
+  pointer-events: none; /* only the bar's children take the pointer */
+  transition:
+    opacity var(--dur-camera) var(--ease-camera),
+    visibility 0s linear 0s;
+}
+/*
+ * While the camera is inside a product there is no interface at all: no mark,
+ * no navigation, no cart. The sneaker and the room are the entire frame. It
+ * leaves on the camera's clock, so it reads as part of the move rather than
+ * as a bar being switched off.
+ */
+/* The opening: after the intro the room is dark and there is no interface in
+   it at all. The header arrives only once the lights have finished coming up. */
+body:has(#k-stage[data-ignition]) .k-nav {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-slow) var(--ease-light);
+}
+body[data-route='product'] .k-nav {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity calc(var(--dur-camera) * 0.45) var(--ease-in),
+    visibility 0s linear calc(var(--dur-camera) * 0.45);
+}
+/* No bar, no border, no container: on the stage the header is just three
+   pieces of type floating in the room. There is deliberately no ::before
+   scrim here — the room behind it is already near-black. */
+body[data-surface='page'] .k-nav::before {
+  /* The editorial pages scroll long headlines under the header, so there the
+     type needs something to sit on. It is a fade and nothing else: the mask
+     takes it to zero before its own bottom edge, so there is no line, no
+     border and no panel — just darkness thinning out. */
+  content: '';
+  position: absolute;
+  inset: 0 0 -52px 0;
+  background: linear-gradient(180deg, rgb(5 5 6 / 0.92) 0%, rgb(5 5 6 / 0.6) 44%, rgb(5 5 6 / 0) 100%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.55) 46%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.55) 46%, transparent 100%);
+  pointer-events: none;
+}
+.k-nav__bar {
+  position: relative;
+  height: 100%;
+  /* The wordmark lines up with the content margin of the room below it —
+     neither jammed into the corner nor pushed toward the middle. */
+  padding-inline: var(--shell-pad);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-5);
+}
+.k-nav__bar > * {
+  pointer-events: auto;
+}
+.k-nav__brand {
+  justify-self: start;
+  display: inline-flex;
+  /* Off the very edge and a size up. The mark now sits inboard of the shell
+     margin, roughly over the left edge of the display below it, and reads as
+     placed in the room rather than pinned to the corner of the window. */
+  margin-left: clamp(4px, 1.4vw, 26px);
+  padding: var(--space-2) 0;
+  font-size: 1.0625rem; /* 17px, from 15 */
+  text-decoration: none;
+  color: var(--text-1);
+}
+.k-nav__mark {
+  letter-spacing: 0.3em;
+  margin-right: -0.3em;
+}
+.k-nav__list {
+  display: flex;
+  gap: clamp(var(--space-4), 2.6vw, var(--space-7));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.k-nav__link {
+  position: relative;
+  display: inline-block;
+  padding: var(--space-2) var(--space-1);
+  font-family: var(--font-body);
+  font-size: 0.8125rem; /* 13px — compact on purpose */
+  /* A touch more weight so small type still reads as deliberate rather than
+     faint, and a hair of positive tracking to keep it from looking cramped. */
+  font-weight: 600;
+  letter-spacing: 0.012em;
+  color: var(--text-3);
+  text-decoration: none;
+  transition: color var(--dur-base) var(--ease-standard);
+}
+.k-nav__link::after {
+  /* the active marker: one lit pixel of LED, nothing more */
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: var(--led-core);
+  box-shadow: 0 0 5px 1px var(--led-glow);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--dur-base) var(--ease-light),
+    transform var(--dur-base) var(--ease-out);
+}
+.k-nav__link:hover {
+  color: var(--text-1);
+}
+.k-nav__link[aria-current='page'] {
+  color: var(--text-1);
+}
+.k-nav__link[aria-current='page']::after {
+  opacity: 1;
+  transform: none;
+}
+.k-nav__list {
+  gap: clamp(var(--space-4), 2vw, var(--space-6));
+}
+
+.k-nav__actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.k-nav__cart,
+.k-nav__menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  color: var(--text-3);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-base) var(--ease-standard);
+}
+.k-nav__cart:hover,
+.k-nav__menu-btn:hover,
+.k-nav__cart[aria-expanded='true'] {
+  color: var(--text-1);
+}
+.k-nav__cart-icon {
+  flex: none;
+}
+/* Badge = a tiny LED: off when the cart is empty, lit when it holds pairs. */
+.k-nav__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 5px;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--text-3);
+  background: var(--led-off);
+  box-shadow: inset 0 0 0 1px rgb(255 122 31 / 0.22);
+  border-radius: var(--radius-xs);
+  transition:
+    color var(--dur-base) var(--ease-light),
+    background-color var(--dur-base) var(--ease-light),
+    box-shadow var(--dur-base) var(--ease-light);
+}
+/* A lit count, not a painted chip. A solid orange tile is the brightest thing
+   on the page after the LED strips and drags the eye straight out of the room;
+   the same number glowing on the dark ground reads just as clearly and keeps
+   the header as quiet as the reference's. Orange stays light, never paint. */
+.k-nav__badge:not([data-count='0']) {
+  color: var(--led-hot);
+  background: rgb(255 122 31 / 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 122 31 / 0.5),
+    0 0 10px rgb(255 100 20 / 0.22);
+  text-shadow: 0 0 8px rgb(255 120 36 / 0.7);
+}
+.k-nav__badge.is-bumped {
+  animation: k-badge-bump 520ms var(--ease-out);
+}
+@keyframes k-badge-bump {
+  0% {
+    filter: brightness(1.8);
+    transform: scale(1.18);
+  }
+  100% {
+    filter: none;
+    transform: none;
+  }
+}
+
+.k-nav__menu-btn {
+  display: none;
+}
+.k-nav__menu-lines {
+  display: inline-grid;
+  gap: 5px;
+  width: 18px;
+}
+.k-nav__menu-lines span {
+  display: block;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.is-menu-open .k-nav__menu-lines span:first-child {
+  transform: translateY(3.25px) rotate(45deg);
+}
+.is-menu-open .k-nav__menu-lines span:last-child {
+  transform: translateY(-3.25px) rotate(-45deg);
+}
+
+/* ---- Compact menu (< 760px) ---- */
+.k-menu {
+  position: fixed;
+  inset: var(--nav-h) 0 auto 0;
+  z-index: var(--z-menu);
+  pointer-events: auto;
+  padding: var(--space-4) var(--gutter) var(--space-6);
+  background: rgb(10 10 12 / 0.95);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: var(--shadow-soft);
+  animation: k-menu-in var(--dur-base) var(--ease-out);
+}
+.k-menu__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.k-menu__link {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline);
+}
+.k-menu__link[aria-current='page'] {
+  color: var(--text-1);
+}
+.k-menu__link[aria-current='page']::after {
+  content: '';
+  margin-left: auto;
+  width: 18px;
+  height: 2px;
+  background: var(--led-core);
+  box-shadow: 0 0 6px 1px var(--led-glow);
+}
+@keyframes k-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (max-width: 759.98px) {
+  .k-nav__bar {
+    grid-template-columns: 1fr auto;
+  }
+  .k-nav__primary {
+    display: none;
+  }
+  .k-nav__menu-btn {
+    display: inline-flex;
+  }
+  .k-lockup .k-wordmark {
+    font-size: 1.0625rem;
+  }
+}
+@media (max-width: 400px) {
+  .k-nav__cart-label,
+  .k-nav__menu-label {
+    /* keep the accessible name, drop the visible word on the narrowest phones */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .k-nav__cart,
+  .k-nav__menu-btn {
+    min-width: 44px;
+    justify-content: center;
+    padding: 0 var(--space-2);
+  }
+}
+
+/* ---- Footer ---- */
+.k-footer {
+  position: relative;
+  margin-top: var(--space-9);
+  padding: var(--space-8) 0 var(--space-6);
+  border-top: 1px solid var(--hairline);
+  background: linear-gradient(180deg, transparent, rgb(5 5 7 / 0.66));
+}
+.k-footer::before {
+  /* a dim LED strip along the top edge, like the lip of a plinth */
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: min(320px, 60%);
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--led-core), transparent);
+  box-shadow: 0 0 12px 1px var(--led-glow);
+  opacity: 0.8;
+}
+.k-footer__inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'sig note nav'
+    'fine fine fine';
+  gap: var(--space-6) var(--space-8);
+  align-items: start;
+}
+.k-footer__sig {
+  grid-area: sig;
+}
+.k-lockup--footer .k-wordmark {
+  font-size: var(--fs-xl);
+}
+.k-lockup--footer .k-signature {
+  font-size: var(--fs-2xs);
+}
+.k-footer__note {
+  grid-area: note;
+  max-width: 40ch;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.k-footer__nav {
+  grid-area: nav;
+}
+.k-footer__nav ul {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.k-footer__nav a {
+  display: inline-block;
+  padding: var(--space-1) 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+}
+.k-footer__nav a:hover {
+  color: var(--text-1);
+}
+.k-footer__fine {
+  grid-area: fine;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--hairline);
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+@media (max-width: 759.98px) {
+  .k-footer__inner {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'sig' 'note' 'nav' 'fine';
+    gap: var(--space-5);
+  }
+}

@@ -1,0 +1,292 @@
+/*
+ * Intro (static markup in index.html, controller in src/components/intro.ts).
+ * Background = the room background, so revealing the stage never flashes.
+ */
+
+.k-intro {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  display: grid;
+  place-items: center;
+  background: var(--room-bg);
+  background-color: var(--navy-900);
+  --k-intro-p: 0;
+  /* The sign's own light. A deep phosphorescent amber — darker than the white
+     the letters start from, so igniting reads as a filament coming on behind
+     glass rather than as text turning yellow. */
+  --k-intro-amber: #f58120;
+  /* strike < step, so the letters never overlap */
+  --k-intro-strike: 300ms;
+  --k-intro-step: 360ms;
+  transition: opacity 520ms var(--ease-in-out) 80ms;
+}
+.k-intro__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 55% at 50% 48%, transparent 40%, rgb(8 13 25 / 0.75) 100%);
+  pointer-events: none;
+}
+/* A single overhead pool of light, warming up behind the wordmark. */
+.k-intro__pool {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: min(1100px, 140vw);
+  height: 100%;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(34% 26% at 50% 46%, rgb(255 244 230 / 0.1) 0%, rgb(255 244 230 / 0.035) 52%, transparent 76%),
+    radial-gradient(52% 40% at 50% 54%, rgb(255 244 230 / 0.035) 0%, transparent 78%);
+  opacity: 0;
+  animation: k-intro-fade 1600ms var(--ease-light) 200ms forwards;
+  pointer-events: none;
+}
+
+.k-intro__inner {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(640px, 100% - 2 * var(--gutter));
+  transition:
+    opacity 380ms var(--ease-in),
+    transform 600ms var(--ease-in);
+}
+
+.k-intro__wordmark {
+  font-size: clamp(2.75rem, 1.2rem + 7.6vw, 6.75rem);
+}
+/* The sign comes up one letter at a time.
+ *
+ * Every letter starts WHITE — the word is readable from the first frame — and
+ * then each one ignites in turn and stays lit, so the mark builds from a
+ * printed word into a lit sign.
+ *
+ * Strictly sequential: the hold between letters is LONGER than the strike, so
+ * no two letters are ever warming at the same moment. Each fires exactly
+ * once, in an order shuffled in intro.ts (--k-ch is the letter's place in that
+ * order, not its position in the word), and all six are lit before the intro
+ * is allowed to leave. The I has no privilege; it ignites when its turn comes.
+ *
+ * The colour is a deep phosphorescent amber, not a yellow neon: the lit state
+ * sits below the white it came from in luminance, and the bloom is tight —
+ * two short radii, no 90px haze. It should look like a filament behind glass. */
+.k-intro__ch {
+  display: inline-block;
+  color: var(--text-1);
+  text-shadow: none;
+  animation: k-intro-ignite var(--k-intro-strike) var(--ease-light) calc(260ms + var(--k-ch) * var(--k-intro-step)) both;
+  animation-fill-mode: both; /* once a letter is lit it stays lit */
+}
+@keyframes k-intro-ignite {
+  0% {
+    color: var(--text-1);
+    text-shadow: none;
+  }
+  40% {
+    /* the strike: warm and brief, never a white-hot flash */
+    color: #ffb871;
+    text-shadow:
+      0 0 7px rgb(255 142 54 / 0.8),
+      0 0 18px rgb(226 86 11 / 0.45);
+  }
+  100% {
+    color: var(--k-intro-amber);
+    text-shadow:
+      0 0 6px rgb(255 128 36 / 0.55),
+      0 0 17px rgb(214 74 6 / 0.3);
+  }
+}
+
+/* Stitch line: a seam drawn along the base of the mark. */
+.k-intro__stitch {
+  width: 100%;
+  height: 8px;
+  margin-top: clamp(1.25rem, 3vw, 2rem);
+  overflow: visible;
+}
+.k-intro__stitch line {
+  stroke: var(--mist-200);
+  stroke-opacity: 0.38;
+  stroke-width: 1.2;
+  stroke-dasharray: 7 6;
+  stroke-linecap: round;
+}
+.k-intro__stitch-mask rect {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  animation: k-intro-draw 1000ms var(--ease-in-out) 300ms forwards;
+}
+
+.k-intro__signature {
+  margin-top: var(--space-4);
+  font-size: clamp(0.625rem, 0.55rem + 0.3vw, 0.75rem);
+  opacity: 0;
+  animation: k-intro-fade 700ms var(--ease-out) 600ms forwards;
+}
+
+/* LED strip = progress. Track is the unlit strip; fill is the LED. */
+.k-intro__led {
+  position: relative;
+  width: min(360px, 72%);
+  height: 2px;
+  margin-top: clamp(2.5rem, 7vh, 4.5rem);
+}
+.k-intro__led-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: var(--led-off);
+}
+.k-intro__led-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--led-deep), var(--led-core) 70%, var(--led-hot));
+  box-shadow: 0 0 6px 1px var(--led-glow), 0 0 16px 2px rgb(255 100 20 / 0.3);
+  transform: scaleX(var(--k-intro-p));
+  transform-origin: 0 50%;
+}
+.k-intro__led-flare {
+  position: absolute;
+  inset: -24px -10%;
+  background: radial-gradient(50% 50% at 50% 50%, rgb(255 140 50 / 0.55), rgb(255 100 20 / 0.18) 45%, transparent 72%);
+  opacity: 0;
+  transform: scaleX(0.4);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+/* Tread: a band of outsole lugs, very faint, under the strip. */
+.k-intro__tread {
+  width: min(430px, 82%);
+  height: 14px;
+  margin-top: var(--space-4);
+  color: var(--mist-200);
+  opacity: 0;
+  animation: k-intro-tread 700ms var(--ease-out) 700ms forwards;
+}
+
+.k-intro__status {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: min(360px, 72%);
+  margin-top: var(--space-3);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  opacity: 0;
+  animation: k-intro-fade 600ms var(--ease-out) 400ms forwards;
+}
+.k-intro__count {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+}
+
+/* ---- States set by intro.ts ---- */
+.k-intro[data-state='ignite'] .k-intro__led-flare {
+  animation: k-intro-flare 600ms var(--ease-light) forwards;
+}
+.k-intro[data-state='reduced'] .k-intro__ch {
+  /* Reduced motion: no sequence, but the sign is fully lit — every letter
+     the same, which is exactly where the sequence ends. */
+  animation: none;
+  color: var(--k-intro-amber);
+  text-shadow:
+    0 0 6px rgb(255 128 36 / 0.55),
+    0 0 17px rgb(214 74 6 / 0.3);
+}
+.k-intro[data-state='leaving'] {
+  opacity: 0;
+  pointer-events: none;
+}
+.k-intro[data-state='leaving'] .k-intro__inner {
+  opacity: 0;
+  transform: translateY(-14px) scale(0.985);
+}
+.k-intro[data-state='leaving'] .k-intro__led-flare {
+  opacity: 0.6;
+}
+
+/* Reduced motion: everything is already in place; only opacity changes. */
+.k-intro[data-state='reduced'] .k-intro__signature,
+.k-intro[data-state='reduced'] .k-intro__status,
+.k-intro[data-state='reduced'] .k-intro__tread,
+.k-intro[data-state='reduced'] .k-intro__pool {
+  animation: none;
+  clip-path: none;
+  opacity: 1;
+}
+.k-intro[data-state='reduced'] .k-intro__tread {
+  opacity: 0.26;
+}
+.k-intro[data-state='reduced'] .k-intro__stitch-mask rect {
+  animation: none;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-intro,
+  .k-intro__inner {
+    transition-duration: 200ms;
+    transition-delay: 0ms;
+  }
+  .k-intro[data-state='leaving'] .k-intro__inner {
+    transform: none;
+  }
+  .k-intro__ch {
+    /* No sequence, but the finished state of one: the whole sign lit, every
+       letter the same, which is where the animated version ends up anyway. */
+    animation: none;
+    color: var(--k-intro-amber);
+    text-shadow:
+      0 0 6px rgb(255 128 36 / 0.55),
+      0 0 17px rgb(214 74 6 / 0.3);
+  }
+  .k-intro__signature,
+  .k-intro__status,
+  .k-intro__pool {
+    animation: none;
+    opacity: 1;
+  }
+  .k-intro__stitch-mask rect {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* While the intro is up the app underneath must not be scrolled or focused. */
+.k-intro-active body {
+  overflow: hidden;
+}
+
+@keyframes k-intro-draw {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes k-intro-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes k-intro-tread {
+  to {
+    opacity: 0.26;
+  }
+}
+@keyframes k-intro-flare {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+  40% {
+    opacity: 1;
+    transform: scaleX(1.05);
+  }
+  100% {
+    opacity: 0.75;
+    transform: scaleX(1);
+  }
+}

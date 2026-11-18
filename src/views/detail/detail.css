@@ -1,0 +1,666 @@
+/*
+ * Product detail (Package C). Prefix: dt-, --dt-.
+ * Geometry (--dt-panel-*, --dt-stage-height) is written by index.ts from the
+ * same computeLayout() the camera maths use, so the panel and the zoomed shoe
+ * can never overlap.
+ */
+
+.dt {
+  --dt-panel-left: auto;
+  --dt-panel-top: var(--nav-h);
+  --dt-panel-width: 420px;
+  --dt-panel-height: calc(100% - var(--nav-h));
+  --dt-pad: clamp(1.25rem, 2vw, 3rem);
+  position: absolute;
+  inset: 0;
+}
+
+/* Transparent catcher over the quiet room: blocks stray scrolling and keyboard-less
+   clicks on the stage while the camera is in; on wide screens a click steps back out. */
+.dt-backdrop {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+.dt[data-open='true'] .dt-backdrop {
+  display: block;
+  pointer-events: auto;
+}
+.dt[data-open='true'][data-mode='side'] .dt-backdrop {
+  cursor: zoom-out;
+}
+
+/* ------------------------------------------------------------- the slab */
+.dt-panel {
+  position: absolute;
+  left: var(--dt-panel-left);
+  top: var(--dt-panel-top);
+  width: var(--dt-panel-width);
+  height: var(--dt-panel-height);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  pointer-events: auto;
+  color: var(--text-1);
+  /*
+   * NO CARD — but the room still has to fall away behind the type.
+   *
+   * There is no surface here: no fill, no blur, no edge, no border, no
+   * shadow, and nothing with a left boundary you could point at. What there
+   * is, is shadow: a wide gradient that starts at nothing well inside the
+   * column and deepens toward the frame edge, so the wall simply goes dark on
+   * that side the way it already does in the corners of the room.
+   *
+   * It earns its place rather than being decoration. The camera is close
+   * enough that a neighbouring pair can sit exactly where the specification
+   * is set — the pairs are deliberately NOT dimmed, because the framing is
+   * what takes them out of the shot — and without this the materials and
+   * characteristics are read over a sneaker.
+   */
+  background: none;
+}
+.dt-panel::before {
+  /* Carried on a pseudo-element so it can bleed past the panel's own box and
+     run the full height of the frame: clipped to the box it left a tonal step
+     along the top edge, which is exactly the giveaway a card leaves. */
+  content: '';
+  position: absolute;
+  inset: calc(var(--nav-h) * -1) 0 0 0;
+  z-index: -1;
+  pointer-events: none;
+  /*
+   * Opaque where the type is, nothing where it is not.
+   *
+   * The camera is close enough that a whole neighbouring pair can sit exactly
+   * behind the specification; at 95% it was still showing through. From a
+   * third of the way in this is solid, so nothing of the room reads through
+   * the text — but it still has no left edge, so it is read as the room
+   * falling into shadow rather than as a panel laid over a photograph.
+   */
+  background: linear-gradient(
+    90deg,
+    rgb(4 4 6 / 0) 0%,
+    rgb(4 4 6 / 0.72) 10%,
+    rgb(4 4 6 / 0.97) 24%,
+    rgb(4 4 6 / 1) 36%,
+    rgb(4 4 6 / 1) 100%
+  );
+}
+
+/* ------------------------------------------------------------------ lead
+   The left of the frame: back control and breadcrumb on one line, the name
+   under it, and the product's one sentence under that. It sits on the room,
+   not in a container, and it is the first thing read. */
+.dt-lead {
+  position: absolute;
+  left: var(--shell-pad);
+  top: calc(var(--nav-h) * 0.5);
+  width: min(30rem, calc(100% - var(--dt-panel-width, 420px) - var(--shell-pad) * 3));
+  pointer-events: none;
+  color: var(--text-1);
+}
+.dt-lead > * {
+  pointer-events: auto;
+}
+/* The lead belongs to the product view, so it leaves with it. Without this the
+   back control and the breadcrumb stay printed over the showroom after the
+   camera has flown home. It goes on the camera's clock, so it reads as part of
+   the move out rather than as a bar being switched off. */
+.dt[data-open='false'] .dt-lead {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity calc(var(--dur-camera) * 0.4) var(--ease-in),
+    visibility 0s linear calc(var(--dur-camera) * 0.4);
+}
+.dt[data-open='true'] .dt-lead {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity calc(var(--dur-camera) * 0.5) var(--ease-out) calc(var(--dur-camera) * 0.35);
+}
+.dt-lead::before {
+  /* The same trick as the specification column, in the opposite corner: the
+     camera can park a pale neighbouring pair directly behind the back control
+     and the name, and light type on a cream suede upper is unreadable. This
+     is a corner falling into shadow — no box, no edge, nothing to see. */
+  content: '';
+  position: absolute;
+  inset: calc(var(--nav-h) * -1) -14% -40% calc(var(--shell-pad) * -1);
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    125% 115% at 0% 0%,
+    rgb(4 4 6 / 0.93) 0%,
+    rgb(4 4 6 / 0.78) 34%,
+    rgb(4 4 6 / 0.38) 62%,
+    rgb(4 4 6 / 0.1) 80%,
+    transparent 92%
+  );
+}
+
+.dt-panel__scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: var(--space-5) var(--dt-pad) var(--space-6);
+  /* Soft edge where the text runs under the pinned actions. Deep enough that
+     a part-visible line reads as "there is more below", not as a clipped box —
+     on a short viewport the characteristics are exactly what lands here. */
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 52px), rgb(0 0 0 / 0.35) calc(100% - 18px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 52px), rgb(0 0 0 / 0.35) calc(100% - 18px), transparent);
+  scroll-padding-bottom: 60px; /* scrolled-to content lands clear of that fade */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  scrollbar-color: rgb(201 207 217 / 0.18) transparent;
+}
+
+.dt-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- back */
+.dt-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: calc(var(--space-3) * -1);
+}
+.dt-crumb {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  line-height: 1;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.dt-crumb__sep {
+  opacity: 0.5;
+}
+.dt-crumb__no {
+  font-variant-numeric: tabular-nums;
+  color: var(--led-core);
+}
+.dt-back {
+  /*
+   * The only way out of a product, so it has to be findable at a glance —
+   * without becoming a button. It gets a hairline enclosure, full-strength
+   * type and an ember arrow: enough weight to read as the exit on a dark
+   * wall, still quiet enough to belong to the room.
+   */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  /* It is a label, not a paragraph: on a narrow sheet it was wrapping onto a
+     second line and the pill grew into a block. */
+  white-space: nowrap;
+  color: var(--text-1);
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+  background: rgb(10 10 12 / 0.55);
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+.dt-back .dt-icon {
+  color: var(--led-core);
+}
+.dt-back:hover,
+.dt-back:focus-visible {
+  color: #fff;
+  background: rgb(14 14 17 / 0.8);
+  box-shadow: inset 0 0 0 1px rgb(255 170 100 / 0.6);
+}
+.dt-back .dt-icon {
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.dt-back:hover .dt-icon {
+  transform: translateX(-3px);
+}
+
+/* ------------------------------------------------------------- heading
+   Editorial masthead: a micro-typographic index line, the name at display
+   scale, the colourway as a quiet caption. */
+.dt-head {
+  display: grid;
+  gap: var(--space-2);
+}
+.dt-name {
+  /* Prominent, not oversized: it carries the page without shouting, which is
+     what separates a fashion house from a product listing. */
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.1rem, 1.1rem + 2.9vw, 3.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  margin-top: clamp(var(--space-3), 2.2vh, var(--space-5));
+  overflow-wrap: anywhere;
+}
+.dt-name:focus {
+  outline: none;
+}
+/* The product's statement. One sentence, directly under the name, set larger
+   and lighter than any spec on the page: it is the most important thing said
+   about the shoe and the hierarchy has to show that. */
+.dt-statement {
+  margin-top: var(--space-3);
+  max-width: 28ch;
+  font-size: clamp(0.9375rem, 0.85rem + 0.3vw, 1.0625rem);
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  color: var(--text-2);
+}
+
+.dt-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  line-height: 1;
+  color: var(--text-3);
+}
+.dt-meta__sep {
+  opacity: 0.5;
+}
+.dt-colorway {
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.01em;
+}
+.dt-lede {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 40ch;
+}
+.dt-desc {
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  line-height: 1.65;
+}
+
+/* ------------------------------------------------------------- sections
+   Catalogue specification lists: one column, hairline-ruled rows, the value
+   set against the label on a shared baseline. */
+.dt-section {
+  display: grid;
+  gap: var(--space-3);
+}
+.dt-section__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  color: var(--text-3);
+}
+/* Materials read as one catalogue line, not a table: the pieces of the shoe
+   named in sequence and separated by a hairline bullet. */
+.dt-materials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15em 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--hairline);
+  font-size: var(--fs-sm);
+  line-height: 1.65;
+  color: var(--text-1);
+}
+.dt-materials li + li::before {
+  content: '∙';
+  margin: 0 0.62em;
+  color: var(--text-3);
+}
+/* Characteristics: paired micro-label and value, two to a line, ruled above. */
+.dt-chars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--space-5);
+}
+.dt-chars__row {
+  display: grid;
+  gap: 2px;
+  padding: 7px 0 var(--space-2);
+  border-top: 1px solid var(--hairline);
+}
+.dt-chars dt {
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-3);
+}
+.dt-chars dd {
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  color: var(--text-1);
+}
+
+/* ------------------------------------------------------------- sizes */
+.dt-sizes {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+  container-type: inline-size;
+}
+.dt-sizes__legend {
+  padding: 0 0 var(--space-2);
+  margin-bottom: var(--space-3);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.dt-sizes__system {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--text-2);
+}
+.dt-sizes__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
+  gap: 8px;
+}
+/* The full EU run on one line when it fits at 44px a key. */
+@container (min-width: 444px) {
+  .dt-sizes__grid {
+    grid-template-columns: repeat(9, minmax(44px, 1fr));
+  }
+}
+.dt-size {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+.dt-size__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: inherit;
+}
+.dt-size__key {
+  /*
+   * A size is a number, not a button.
+   *
+   * Boxed keys with borders and a filled selected state are the single thing
+   * that made this read as a form on a dashboard. Here each size is plain
+   * tabular type on the wall; it brightens on hover and, when chosen, lights
+   * a short LED rule beneath it — the same light as the shelf the shoe is
+   * standing on. The 48px row keeps the target honest with no box drawn.
+   */
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+}
+/* The chosen size lights its own strip. */
+.dt-size__key::after {
+  content: '';
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 9px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--led-core);
+  box-shadow: 0 0 7px 1px var(--led-glow), 0 0 18px 2px rgb(255 100 20 / 0.34);
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    opacity var(--dur-base) var(--ease-light),
+    transform var(--dur-base) var(--ease-out);
+}
+.dt-size:hover .dt-size__input:not(:disabled) + .dt-size__key {
+  color: var(--text-1);
+}
+.dt-size__input:checked + .dt-size__key {
+  color: var(--text-1);
+  background: none;
+  box-shadow: none;
+}
+.dt-size__input:checked + .dt-size__key::after {
+  opacity: 1;
+  transform: none;
+}
+.dt-size__input:focus-visible + .dt-size__key {
+  outline: 2px solid var(--led-core);
+  outline-offset: 2px;
+}
+.dt-size[data-available='false'] {
+  cursor: not-allowed;
+}
+.dt-size__input:disabled + .dt-size__key {
+  color: var(--text-3);
+  background: none;
+  box-shadow: none;
+  opacity: 0.4;
+}
+.dt-size__input:disabled + .dt-size__key::before {
+  /* struck through: a hairline across the key */
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 50%;
+  height: 1px;
+  background: var(--text-3);
+  transform: rotate(-24deg);
+  opacity: 0.7;
+}
+.dt-hint {
+  min-height: 1.4em;
+  font-size: var(--fs-sm);
+  color: var(--led-hot);
+}
+.dt-hint:empty {
+  min-height: 0;
+}
+.dt-sizes[data-invalid='true'] .dt-size__input:not(:disabled) + .dt-size__key {
+  color: var(--text-1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 0 0 1px rgb(255 160 90 / 0.45);
+}
+
+/* ------------------------------------------------------------- actions */
+/* ------------------------------------------------------------- actions */
+.dt-actions {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--dt-pad) var(--space-6);
+  /* No slab under the controls: just enough darkness for the type to hold,
+     fading to nothing, so the room continues underneath. */
+  background: linear-gradient(180deg, rgb(4 4 5 / 0), rgb(4 4 5 / 0.55) 42%, rgb(4 4 5 / 0.72));
+}
+.dt-add {
+  /*
+   * Not a block of white. A full-width line of type over a hairline, which is
+   * how a fashion house asks you to buy something: the weight comes from the
+   * spacing around it, not from a filled rectangle. The LED fills along its
+   * foot once the pair is added — the same light as the shelf.
+   */
+  width: 100%;
+  min-height: 54px;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  overflow: hidden;
+  color: var(--text-1);
+  background: none;
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 0 var(--hairline-strong);
+  transition:
+    color var(--dur-base) var(--ease-standard),
+    letter-spacing var(--dur-base) var(--ease-standard),
+    box-shadow var(--dur-base) var(--ease-standard);
+}
+.dt-add:hover:not(:disabled) {
+  color: #fff;
+  letter-spacing: 0.26em;
+  box-shadow: inset 0 1px 0 0 rgb(255 170 100 / 0.55);
+}
+.dt-add:disabled {
+  color: var(--text-3);
+  background: none;
+  box-shadow: inset 0 1px 0 0 var(--hairline);
+}
+/* An LED strip along the foot: unlit until the pair is added. */
+.dt-add__led {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--led-core);
+  box-shadow: 0 0 8px 1px var(--led-glow), 0 0 22px 3px rgb(255 100 20 / 0.32);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  opacity: 0.9;
+}
+.dt-add[data-state='added'] .dt-add__led {
+  animation: dt-led-fill 900ms var(--ease-light) forwards;
+}
+.dt-add[data-state='added'] {
+  color: var(--led-hot);
+}
+@keyframes dt-led-fill {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  60% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0.55;
+  }
+}
+.dt-feedback {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  min-height: 0;
+}
+.dt-feedback:empty,
+.dt-feedback:not([data-shown='true']) {
+  display: none;
+}
+.dt-viewcart {
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  color: var(--text-1);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: var(--hairline-strong);
+}
+.dt-viewcart:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ------------------------------------------------------------- sheet (< 760px) */
+.dt[data-mode='sheet'] .dt-panel::before {
+  display: none;
+}
+.dt[data-mode='sheet'] .dt-panel {
+  /* narrow screens: the sheet needs a real ground, not a side gradient */
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 22%),
+    linear-gradient(180deg, rgb(10 10 12 / 0.92), rgb(5 5 7 / 0.97));
+  box-shadow:
+    0 -32px 64px -32px rgb(0 0 0 / 0.88),
+    inset 0 1px 0 rgb(232 236 244 / 0.22);
+}
+.dt[data-mode='sheet'] .dt-panel__scroll {
+  gap: var(--space-5);
+  padding: var(--space-2) var(--gutter) var(--space-5);
+}
+.dt[data-mode='sheet'] .dt-actions {
+  padding: var(--space-3) var(--gutter) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+}
+/* Sheet (narrow) mode: the lead keeps only the back row over the room, and
+   detail/index.ts moves the name block down into the sheet, where there is
+   width for it. The lead must not cover the shoe. */
+.dt[data-mode='sheet'] .dt-lead {
+  left: var(--gutter);
+  right: var(--gutter);
+  top: calc(var(--nav-h) * 0.3);
+  width: auto;
+}
+.dt[data-mode='sheet'] .dt-name {
+  font-size: var(--fs-xl);
+  margin-top: 0;
+}
+.dt[data-mode='sheet'] .dt-statement {
+  max-width: none;
+  font-size: var(--fs-sm);
+}
+.dt[data-mode='sheet'] .dt-feedback[data-shown='true'] {
+  font-size: var(--fs-xs);
+}
+
+@media (max-width: 379.98px) {
+  .dt-materials,
+  .dt-chars {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 759.98px) {
+  /* The crumb sits beside the back pill and there is no room for both once
+     the pill holds its line; the sheet states the collection directly under
+     the name anyway, so nothing is lost by dropping it here. */
+  .dt-crumb {
+    display: none;
+  }
+  .dt-back {
+    /* Narrower tracking and padding keep it on one line at 320px without
+       shrinking the 44px touch target or dropping its enclosure. */
+    padding: 0 var(--space-3);
+    gap: var(--space-1);
+    letter-spacing: 0.08em;
+    font-size: var(--fs-2xs);
+  }
+}

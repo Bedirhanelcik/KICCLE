@@ -1,0 +1,286 @@
+/*
+ * FAQ (Package D). Prefix: fq- / --fq-.
+ * Numbered rows on hairlines; the open question is marked by an LED tick.
+ */
+
+.fq {
+  --fq-num-col: 3.5rem;
+  --fq-icon-col: 44px;
+  --fq-dur: calc(var(--dur-slow) * 0.9);
+  padding-top: clamp(var(--space-6), 5vw, var(--space-9));
+  padding-bottom: var(--space-6);
+}
+
+/* ---------------------------------------------------------------- head */
+.fq-head {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+  column-gap: var(--gutter);
+  row-gap: var(--space-5);
+  padding-bottom: var(--space-8);
+}
+.fq-head__title {
+  grid-column: 1 / -1;
+  max-width: 14ch;
+  font-size: clamp(2.6rem, 1.3rem + 4.6vw, 5.6rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+.fq-head__lede {
+  grid-column: 2;
+  max-width: 52ch;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/* ---------------------------------------------------------------- body */
+.fq-body {
+  /* One column: with four questions there is nothing to index. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.fq-groups {
+  max-width: 50rem;
+}
+
+
+/* -------------------------------------------------------------- groups */
+.fq-group + .fq-group {
+  margin-top: var(--space-9);
+}
+.fq-group {
+  scroll-margin-top: calc(var(--nav-h) + var(--space-6));
+}
+.fq-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hairline-strong);
+}
+
+/* ---------------------------------------------------------------- item */
+.fq-item {
+  position: relative;
+}
+.fq-item::after {
+  /* the row's hairline (drawn in on entrance) */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--hairline);
+  transform-origin: 0 50%;
+  transition: transform calc(var(--dur-slow) * 1.3) var(--ease-out);
+  transition-delay: calc(var(--fq-i) * 45ms);
+}
+.fq-item__h {
+  font-family: var(--font-body);
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: normal;
+}
+.fq-item__btn {
+  display: grid;
+  grid-template-columns: var(--fq-num-col) minmax(0, 1fr) var(--fq-icon-col);
+  align-items: center;
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-4) 0;
+  text-align: left;
+  color: var(--text-1);
+}
+.fq-item__num {
+  padding-left: var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  transition:
+    color var(--dur-base) var(--ease-standard),
+    opacity var(--dur-slow) var(--ease-out);
+  transition-delay: 0ms, calc(var(--fq-i) * 45ms + 120ms);
+}
+.fq-item__q {
+  max-width: 48ch;
+  font-size: var(--fs-md);
+  font-weight: 500;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+.fq-item__btn:hover .fq-item__num,
+.fq-item.is-open .fq-item__num {
+  color: var(--text-1);
+}
+
+/* plus that turns into a minus */
+.fq-item__icon {
+  position: relative;
+  justify-self: end;
+  width: 44px;
+  height: 44px;
+}
+.fq-item__icon::before,
+.fq-item__icon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 1.5px;
+  margin: -0.75px 0 0 -7px;
+  border-radius: 1px;
+  background: var(--text-2);
+  transition:
+    transform var(--fq-dur) var(--ease-out),
+    background-color var(--dur-base) var(--ease-standard);
+}
+.fq-item__icon::after {
+  transform: rotate(90deg);
+}
+.fq-item.is-open .fq-item__icon::after {
+  transform: rotate(0deg);
+}
+.fq-item__btn:hover .fq-item__icon::before,
+.fq-item__btn:hover .fq-item__icon::after {
+  background: var(--text-1);
+}
+
+/* the LED tick beside an open question */
+.fq-item__led {
+  position: absolute;
+  left: 0;
+  top: 21px;
+  width: 2px;
+  height: 22px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--led-hot), var(--led-core));
+  box-shadow: 0 0 6px 1px var(--led-glow), 0 0 16px 2px var(--led-ambient);
+  opacity: 0;
+  transform: scaleY(0.2);
+  transform-origin: 50% 0;
+  transition:
+    opacity var(--dur-base) var(--ease-light),
+    transform var(--fq-dur) var(--ease-out);
+  pointer-events: none;
+}
+.fq-item.is-open .fq-item__led {
+  opacity: 1;
+  transform: none;
+}
+
+/* answer: height animates through grid rows, no measuring, no jump */
+.fq-item__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--fq-dur) var(--ease-standard),
+    visibility 0s linear var(--fq-dur);
+}
+.fq-item.is-open .fq-item__panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--fq-dur) var(--ease-standard),
+    visibility 0s linear 0s;
+}
+.fq-item__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.fq-item__answer {
+  display: grid;
+  gap: var(--space-3);
+  max-width: calc(64ch + var(--fq-num-col));
+  padding: 0 var(--fq-icon-col) var(--space-6) var(--fq-num-col);
+  color: var(--text-2);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity var(--dur-base) var(--ease-standard),
+    transform var(--fq-dur) var(--ease-out);
+}
+.fq-item.is-open .fq-item__answer {
+  opacity: 1;
+  transform: none;
+  transition-delay: 80ms;
+}
+
+/* --------------------------------------------------------- entrance */
+.fq[data-fq-enter='start'] .fq-item::after,
+.fq[data-fq-enter='start'] .fq-item__num {
+  transition: none;
+}
+.fq[data-fq-enter='start'] .fq-item::after {
+  transform: scaleX(0);
+}
+.fq[data-fq-enter='start'] .fq-item__num {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fq-item__answer {
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------- responsive */
+@media (max-width: 1079.98px) {
+  .fq-head,
+  .fq-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fq-head__lede {
+    grid-column: 1;
+  }
+}
+@media (max-width: 759.98px) {
+  .fq {
+    --fq-num-col: 2.75rem;
+  }
+  .fq-head {
+    padding-bottom: var(--space-7);
+  }
+  .fq-head__lede {
+    font-size: var(--fs-base);
+  }
+  .fq-item__q {
+    font-size: var(--fs-base);
+  }
+  .fq-item__answer {
+    padding-right: 0;
+  }
+}
+@media (max-width: 479.98px) {
+}
+
+/* ------------------------------------------------------------------ links
+   The contact answer carries the author's two real profiles. Understated
+   text links, the same treatment as About: no buttons, no icon set. */
+.fq-item__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1.25rem, 4vw, 2.25rem);
+  margin-top: var(--space-3);
+}
+.fq-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline-strong);
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+.fq-link:hover,
+.fq-link:focus-visible {
+  color: #fff;
+  border-color: rgb(255 170 100 / 0.7);
+}

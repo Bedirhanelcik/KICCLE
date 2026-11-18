@@ -1,0 +1,309 @@
+{
+  "generatedBy": "scripts/assets.mjs",
+  "visibleAlpha": 32,
+  "images": [
+    {
+      "id": "a1",
+      "kind": "photo",
+      "src": "assets/products/a1-1600.webp",
+      "width": 1600,
+      "height": 790,
+      "srcset": [
+        {
+          "src": "assets/products/a1-1600.webp",
+          "width": 1600
+        },
+        {
+          "src": "assets/products/a1-800.webp",
+          "width": 800
+        }
+      ],
+      "visibleBox": {
+        "x": 0.0425,
+        "y": 0.01646,
+        "w": 0.92688,
+        "h": 0.97468
+      },
+      "baseline": 0.98987,
+      "original": {
+        "src": "assets/original/a1.png",
+        "upload": "831e1cec-image.png",
+        "sha256": "18dfc0d380ba7dbf18c36b2d3688b8f78c6588173fec878268027070777fed0d",
+        "width": 1774,
+        "height": 887,
+        "cropBox": {
+          "x": 0,
+          "y": 9,
+          "w": 1755,
+          "h": 866
+        },
+        "cropAspect": 2.026559
+      },
+      "variants": [
+        {
+          "src": "assets/products/a1-1600.webp",
+          "width": 1600,
+          "height": 790,
+          "bytes": 316518
+        },
+        {
+          "src": "assets/products/a1-800.webp",
+          "width": 800,
+          "height": 395,
+          "bytes": 82504
+        }
+      ]
+    },
+    {
+      "id": "a2",
+      "kind": "photo",
+      "src": "assets/products/a2-1600.webp",
+      "width": 1600,
+      "height": 841,
+      "srcset": [
+        {
+          "src": "assets/products/a2-1600.webp",
+          "width": 1600
+        },
+        {
+          "src": "assets/products/a2-800.webp",
+          "width": 800
+        }
+      ],
+      "visibleBox": {
+        "x": 0.00125,
+        "y": 0.01427,
+        "w": 0.99125,
+        "h": 0.97503
+      },
+      "baseline": 0.98811,
+      "original": {
+        "src": "assets/original/a2.png",
+        "upload": "92adb170-image.png",
+        "sha256": "0a8474d013355216b179bce0a86214ac3204151b459addd9be759d7661dc6109",
+        "width": 1774,
+        "height": 887,
+        "cropBox": {
+          "x": 48,
+          "y": 0,
+          "w": 1688,
+          "h": 887
+        },
+        "cropAspect": 1.903044
+      },
+      "variants": [
+        {
+          "src": "assets/products/a2-1600.webp",
+          "width": 1600,
+          "height": 841,
+          "bytes": 414018
+        },
+        {
+          "src": "assets/products/a2-800.webp",
+          "width": 800,
+          "height": 420,
+          "bytes": 106590
+        }
+      ]
+    },
+    {
+      "id": "a3",
+      "kind": "photo",
+      "src": "assets/products/a3-1600.webp",
+      "width": 1600,
+      "height": 792,
+      "srcset": [
+        {
+          "src": "assets/products/a3-1600.webp",
+          "width": 1600
+        },
+        {
+          "src": "assets/products/a3-800.webp",
+          "width": 800
+        }
+      ],
+      "visibleBox": {
+        "x": 0.00438,
+        "y": 0.00884,
+        "w": 0.98375,
+        "h": 0.97601
+      },
+      "baseline": 0.98359,
+      "original": {
+        "src": "assets/original/a3.png",
+        "upload": "04c22552-image.png",
+        "sha256": "9b8fd4c86ad8aa61cfd89a5f7e6a78ec1e5b4b5eac7840be85db6cdbba83c096",
+        "width": 1790,
+        "height": 878,
+        "cropBox": {
+          "x": 31,
+          "y": 0,
+          "w": 1741,
+          "h": 862
+        },
+        "cropAspect": 2.019722
+      },
+      "variants": [
+        {
+          "src": "assets/products/a3-1600.webp",
+          "width": 1600,
+          "height": 792,
+          "bytes": 386920
+        },
+        {
+          "src": "assets/products/a3-800.webp",
+          "width": 800,
+          "height": 396,
+          "bytes": 103128
+        }
+      ]
+    },
+    {
+      "id": "p04",
+      "kind": "placeholder",
+      "src": "assets/placeholders/p04.svg",
+      "width": 971,
+      "height": 393,
+      "srcset": [],
+      "visibleBox": {
+        "x": 0.00051,
+        "y": 0.00127,
+        "w": 0.99897,
+        "h": 0.99746
+      },
+      "baseline": 0.99873,
+      "viewBox": [
+        24,
+        39.5,
+        971,
+        393
+      ]
+    },
+    {
+      "id": "p05",
+      "kind": "placeholder",
+      "src": "assets/placeholders/p05.svg",
+      "width": 988,
+      "height": 385.5,
+      "srcset": [],
+      "visibleBox": {
+        "x": 0.00051,
+        "y": 0.0013,
+        "w": 0.99899,
+        "h": 0.99741
+      },
+      "baseline": 0.9987,
+      "viewBox": [
+        8.5,
+        45,
+        988,
+        385.5
+      ]
+    },
+    {
+      "id": "p06",
+      "kind": "placeholder",
+      "src": "assets/placeholders/p06.svg",
+      "width": 986,
+      "height": 431,
+      "srcset": [],
+      "visibleBox": {
+        "x": 0.00051,
+        "y": 0,
+        "w": 0.99848,
+        "h": 0.99884
+      },
+      "baseline": 0.99884,
+      "viewBox": [
+        8.5,
+        -0.5,
+        986,
+        431
+      ]
+    },
+    {
+      "id": "p07",
+      "kind": "placeholder",
+      "src": "assets/placeholders/p07.svg",
+      "width": 971,
+      "height": 381.5,
+      "srcset": [],
+      "visibleBox": {
+        "x": 0.00103,
+        "y": 0.00131,
+        "w": 0.99846,
+        "h": 0.99738
+      },
+      "baseline": 0.99869,
+      "viewBox": [
+        26.5,
+        49,
+        971,
+        381.5
+      ]
+    },
+    {
+      "id": "p08",
+      "kind": "placeholder",
+      "src": "assets/placeholders/p08.svg",
+      "width": 989.5,
+      "height": 348.5,
+      "srcset": [],
+      "visibleBox": {
+        "x": 0.00051,
+        "y": 0.00287,
+        "w": 0.99899,
+        "h": 0.9957
+      },
+      "baseline": 0.99857,
+      "viewBox": [
+        8.5,
+        83,
+        989.5,
+        348.5
+      ]
+    },
+    {
+      "id": "p09",
+      "kind": "placeholder",
+      "src": "assets/placeholders/p09.svg",
+      "width": 990,
+      "height": 354.5,
+      "srcset": [],
+      "visibleBox": {
+        "x": 0.00051,
+        "y": 0.00141,
+        "w": 0.99899,
+        "h": 0.99718
+      },
+      "baseline": 0.99859,
+      "viewBox": [
+        8.5,
+        76,
+        990,
+        354.5
+      ]
+    },
+    {
+      "id": "p10",
+      "kind": "placeholder",
+      "src": "assets/placeholders/p10.svg",
+      "width": 977.5,
+      "height": 363,
+      "srcset": [],
+      "visibleBox": {
+        "x": 0.00051,
+        "y": 0.00138,
+        "w": 0.99898,
+        "h": 0.99725
+      },
+      "baseline": 0.99862,
+      "viewBox": [
+        17.5,
+        67.5,
+        977.5,
+        363
+      ]
+    }
+  ]
+}

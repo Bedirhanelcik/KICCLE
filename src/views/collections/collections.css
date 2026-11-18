@@ -1,0 +1,383 @@
+/*
+ * Collections (Package D). Prefix: cl- / --cl-.
+ * A catalogue index: each collection is a spread with its rail on the left
+ * and its plates on the right. Every plate column has the same width at every
+ * breakpoint, so every shoe is shown at the same scale.
+ */
+
+.cl {
+  --cl-rail: minmax(0, 4fr);
+  --cl-plates: minmax(0, 8fr);
+  padding-top: clamp(var(--space-6), 5vw, var(--space-9));
+  padding-bottom: var(--space-6);
+}
+
+/* ---------------------------------------------------------------- head */
+.cl-head {
+  display: grid;
+  grid-template-columns: var(--cl-rail) var(--cl-plates);
+  column-gap: var(--gutter);
+  row-gap: var(--space-4);
+  align-items: end;
+  padding-bottom: var(--space-3);
+}
+.cl-head__title {
+  grid-column: 1 / -1;
+  /* An index heading, not a poster. The old display size ate a third of the
+     first screen before a single piece was visible. */
+  font-size: clamp(2.2rem, 1.2rem + 3.4vw, 3.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+.cl-head__aside {
+  grid-column: 2;
+  display: grid;
+  gap: var(--space-3);
+  max-width: 52ch;
+  padding-bottom: 0.6rem;
+}
+.cl-head__lede {
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.cl-head__summary {
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+
+/* jump between collections (buttons + scrollIntoView, never #anchors) */
+.cl-jump {
+  grid-column: 1 / -1;
+  margin-top: var(--space-5);
+}
+.cl-jump__list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--hairline-strong);
+}
+.cl-jump__list > li + li {
+  border-left: 1px solid var(--hairline);
+}
+.cl-jump__btn {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-4);
+  text-align: left;
+  color: var(--text-2);
+  transition: color var(--dur-base) var(--ease-standard);
+}
+.cl-jump__btn::before {
+  /* an LED strip along the top edge lights on hover / focus */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 2px;
+  background: var(--led-core);
+  box-shadow: 0 0 8px 1px var(--led-glow);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  opacity: 0;
+  transition:
+    transform var(--dur-slow) var(--ease-light),
+    opacity var(--dur-base) var(--ease-light);
+}
+.cl-jump__btn:hover,
+.cl-jump__btn:focus-visible {
+  color: var(--text-1);
+}
+.cl-jump__btn:hover::before,
+.cl-jump__btn:focus-visible::before {
+  transform: none;
+  opacity: 1;
+}
+.cl-jump__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  line-height: 1.2;
+}
+.cl-jump__count {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+/* ---------------------------------------------------------- collection */
+.cl-coll {
+  display: grid;
+  grid-template-columns: var(--cl-rail) var(--cl-plates);
+  column-gap: var(--gutter);
+  align-items: start;
+  padding-top: var(--space-6);
+  margin-top: var(--space-7);
+  border-top: 1px solid var(--hairline);
+  scroll-margin-top: var(--nav-h);
+}
+.cl-coll__rail {
+  position: sticky;
+  top: calc(var(--nav-h) + var(--space-6));
+  display: grid;
+  gap: var(--space-4);
+  max-width: 34ch;
+}
+.cl-coll__name {
+  font-size: var(--fs-2xl);
+  line-height: 1.05;
+  scroll-margin-top: calc(var(--nav-h) + var(--space-6));
+}
+.cl-coll__name:focus-visible {
+  outline: none;
+}
+.cl-coll__desc {
+  color: var(--text-2);
+}
+.cl-coll__meta {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--hairline);
+  font-size: var(--fs-sm);
+}
+.cl-coll__count {
+  font-family: var(--font-display);
+  color: var(--text-1);
+}
+
+/* -------------------------------------------------------------- plates */
+.cl-plates {
+  display: grid;
+  /* Three across: an index you can take in, rather than two plates per
+     screenful. The plate itself has no card, border or panel — the shoe, its
+     ledge and three lines of type are the whole thing. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-7) var(--gutter);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cl-plate {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.cl-plate__stage {
+  position: relative;
+  isolation: isolate;
+  padding: var(--space-6) 6% var(--space-3);
+}
+.cl-plate__stage::before {
+  /* the overhead spot as it lands on the plate: a soft pool, never a beam
+     (same lighting grammar as the showroom and About) */
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: -8%;
+  right: -8%;
+  top: -14%;
+  bottom: -4%;
+  background:
+    radial-gradient(44% 46% at 50% 64%, rgb(255 241 224 / 0.09) 0%, rgb(255 241 224 / 0.04) 48%, rgb(255 241 224 / 0.012) 76%, transparent 100%),
+    radial-gradient(28% 22% at 50% 14%, rgb(255 241 224 / 0.04) 0%, transparent 100%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+.cl-plate__pool {
+  position: absolute;
+  z-index: 0;
+  left: -4%;
+  right: -4%;
+  top: calc(var(--cl-base) - 14%);
+  height: 28%;
+  background: radial-gradient(closest-side, var(--spot-pool), transparent);
+  pointer-events: none;
+  transition: opacity calc(var(--dur-slow) * 1.6) var(--ease-light);
+}
+.cl-plate__ledge {
+  position: absolute;
+  z-index: 0;
+  left: -5%;
+  right: -5%;
+  /* top of the ledge = the sole line of the figure */
+  top: var(--cl-base);
+  height: 10px;
+}
+.cl-plate__ledge::before {
+  /* clear acrylic seen edge-on: lit top edge, faint face, edges fading out */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, var(--acrylic-highlight) 18%, var(--acrylic-highlight) 82%, transparent) top / 100% 1px no-repeat,
+    linear-gradient(180deg, color-mix(in srgb, var(--acrylic-edge) 70%, transparent), var(--acrylic-fill) 55%, color-mix(in srgb, var(--acrylic-edge) 45%, transparent));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.cl-plate__led {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--led-core) 15%, var(--led-hot) 50%, var(--led-core) 85%, transparent);
+  opacity: 0.18;
+  box-shadow: none;
+  transition:
+    opacity var(--dur-slow) var(--ease-light),
+    box-shadow var(--dur-slow) var(--ease-light);
+}
+.cl-plate__led::after {
+  /* warm spill below the ledge, only when lit */
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 2px;
+  height: 46px;
+  background: radial-gradient(50% 60% at 50% 0%, var(--led-ambient), transparent);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-light);
+  pointer-events: none;
+}
+.cl-plate__shoe {
+  position: relative;
+  z-index: 1;
+}
+.cl-plate__shoe > .k-shoe {
+  z-index: 1;
+}
+
+/* caption */
+.cl-plate__cap {
+  display: grid;
+  gap: var(--space-1);
+  padding-inline: 6%;
+}
+.cl-plate__title {
+  font-size: var(--fs-lg);
+  line-height: 1.2;
+}
+.cl-plate__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding-block: var(--space-2);
+  color: var(--text-1);
+  text-decoration: none;
+}
+/* the whole plate is the link's hit area */
+.cl-plate__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.cl-plate__index {
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.cl-plate__colorway {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+.cl-plate__tagline {
+  max-width: 40ch;
+  color: var(--text-2);
+}
+.cl-plate__study {
+  margin-top: var(--space-2);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+/* hover / focus: the LED under the piece ignites. Nothing moves. */
+.cl-plate:hover .cl-plate__led,
+.cl-plate:focus-within .cl-plate__led {
+  opacity: 1;
+  box-shadow: 0 0 6px 1px var(--led-glow), 0 0 22px 4px var(--led-ambient);
+}
+.cl-plate:hover .cl-plate__led::after,
+.cl-plate:focus-within .cl-plate__led::after {
+  opacity: 1;
+}
+.cl-plate:hover .cl-plate__index,
+.cl-plate:focus-within .cl-plate__index {
+  color: var(--text-1);
+}
+/* Focus ring around the whole plate when the browser can tell (keeps it >= the global ring). */
+@supports selector(:has(a:focus-visible)) {
+  .cl-plate__link:focus-visible {
+    outline: none;
+  }
+  .cl-plate:has(.cl-plate__link:focus-visible) {
+    outline: 2px solid var(--led-core);
+    outline-offset: 6px;
+    border-radius: var(--radius-xs);
+  }
+}
+
+/* scroll reveal: the plate's spot comes up (light only, no movement) */
+.cl-plate__stage::before,
+.cl-plate__shoe {
+  transition:
+    opacity calc(var(--dur-slow) * 1.6) var(--ease-light),
+    filter calc(var(--dur-slow) * 1.6) var(--ease-light);
+}
+.cl--reveals .cl-plate:not(.is-in) .cl-plate__stage::before,
+.cl--reveals .cl-plate:not(.is-in) .cl-plate__pool {
+  opacity: 0;
+}
+.cl--reveals .cl-plate:not(.is-in) .cl-plate__shoe {
+  opacity: 0.35;
+  filter: brightness(0.35);
+}
+
+/* ---------------------------------------------------------- responsive */
+@media (max-width: 1079.98px) {
+  .cl-head,
+  .cl-coll {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cl-head__aside {
+    grid-column: 1;
+  }
+  .cl-coll__rail {
+    position: static;
+    max-width: 60ch;
+    margin-bottom: var(--space-7);
+  }
+  .cl-jump__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cl-jump__list > li:nth-child(odd) {
+    border-left: 0;
+  }
+  .cl-jump__list > li:nth-child(n + 3) {
+    border-top: 1px solid var(--hairline);
+  }
+}
+@media (max-width: 559.98px) {
+  .cl-plates {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-8);
+  }
+}
+@media (max-width: 379.98px) {
+  .cl-jump__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cl-jump__list > li + li {
+    border-left: 0;
+    border-top: 1px solid var(--hairline);
+  }
+}

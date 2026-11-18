@@ -1,0 +1,177 @@
+/*
+ * KICCLE design tokens. Owned by Package A. Every package reads these;
+ * nobody else redefines them (packages may define private --sr-*, --dt-*,
+ * --ct-*, --ab-*, --fq-*, --cl-* variables inside their own selectors).
+ *
+ * Breakpoints (media queries cannot read custom properties, so use these
+ * literal values everywhere and keep the names in comments):
+ *   --bp-xs  360px   smallest supported viewport
+ *   --bp-sm  480px   large phones
+ *   --bp-md  760px   compact nav -> full nav; stacked detail -> side panel
+ *   --bp-lg  1080px  showroom full two-row layout comfortable
+ *   --bp-xl  1440px  reference desktop
+ *   --bp-2xl 1920px  largest designed width (content caps at --page-max)
+ *   e.g. @media (min-width: 760px) { ... }  -> md and up
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Palette: a dark architectural room, charcoal not navy ----
+     The hall is unlit concrete and plaster. Only the sneakers, the LED strips
+     and the overhead light carry colour, and that colour is warm, never blue.
+     (The --navy-* names are kept so every package keeps compiling; the values
+     are neutral charcoals now.) */
+  --navy-950: #050506; /* deepest corners, vignette */
+  --navy-900: #090a0c; /* back wall / app background */
+  --navy-850: #0d0e11;
+  --navy-800: #141518; /* raised surfaces */
+  --navy-700: #1d1f23;
+  --charcoal-900: #08080a; /* floor */
+  --charcoal-800: #121316; /* panels */
+  --charcoal-700: #1b1c20;
+  --charcoal-600: #2a2c31;
+  --steel-500: #6e7076;
+  --steel-400: #92949b;
+  --mist-200: #cfd0d4;
+
+  /* Text: neutral white and soft grey, no blue cast */
+  --text-1: #f2f2f3; /* primary */
+  --text-2: #b1b2b7; /* secondary */
+  --text-3: #7b7d84; /* tertiary, meta */
+  --text-inverse: #0b0b0d;
+
+  /* ---- Orange LED: orange is light, never paint ---- */
+  --led-hot: #ffdcb5; /* white-hot filament centre */
+  --led-core: #ff7a1f; /* the LED itself */
+  --led-deep: #e2560b; /* edge of the strip */
+  --led-glow: rgb(255 110 24 / 0.6); /* close bloom */
+  --led-ambient: rgb(255 100 20 / 0.16); /* light spill on surfaces */
+  --led-off: rgb(255 122 31 / 0.1); /* unlit strip */
+  /* Ready-made LED treatments */
+  --led-shadow: 0 0 6px 1px var(--led-glow), 0 0 22px 4px rgb(255 100 20 / 0.38), 0 0 60px 12px var(--led-ambient);
+  --led-text-shadow: 0 0 6px rgb(255 140 60 / 0.9), 0 0 18px rgb(255 100 20 / 0.6), 0 0 42px rgb(255 100 20 / 0.3);
+
+  /* ---- Light & material ---- */
+  --spot-white: #fff4e6; /* warm tungsten-white spotlight */
+  --spot-cone: rgb(255 243 228 / 0.1);
+  --spot-pool: rgb(255 243 228 / 0.16);
+  --acrylic-fill: rgb(226 230 238 / 0.05);
+  --acrylic-edge: rgb(232 236 244 / 0.24);
+  --acrylic-highlight: rgb(255 255 255 / 0.55);
+  --hairline: rgb(214 216 222 / 0.12);
+  --hairline-strong: rgb(214 216 222 / 0.26);
+  --scrim: rgb(6 6 8 / 0.74);
+  --shadow-soft: 0 18px 40px -18px rgb(0 0 0 / 0.85);
+  --shadow-contact: 0 6px 14px -6px rgb(0 0 0 / 0.9);
+
+  /* App background: the room itself. One continuous architectural volume —
+     a warm bloom where the overhead light washes the plaster, falling away to
+     an unlit floor. No blue anywhere. */
+  --room-bg:
+    radial-gradient(120% 66% at 50% -6%, rgb(64 58 50 / 0.2) 0%, transparent 60%),
+    radial-gradient(86% 48% at 50% 26%, rgb(48 46 44 / 0.16) 0%, transparent 74%),
+    radial-gradient(110% 60% at 50% 116%, rgb(2 2 3 / 0.94) 0%, transparent 76%),
+    linear-gradient(180deg, var(--navy-850) 0%, var(--navy-900) 36%, var(--navy-950) 74%, #030304 100%);
+
+  /* ---- Typography ---- */
+  --font-display: 'Tektur', 'Bahnschrift', 'DIN Alternate', 'Eurostile', system-ui, sans-serif;
+  --font-body: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Major-third scale on a 16px base */
+  --fs-2xs: 0.6875rem; /* 11 */
+  --fs-xs: 0.75rem; /* 12 */
+  --fs-sm: 0.875rem; /* 14 */
+  --fs-base: 1rem; /* 16 */
+  --fs-md: 1.25rem; /* 20 */
+  --fs-lg: 1.5625rem; /* 25 */
+  --fs-xl: 1.953rem; /* 31 */
+  --fs-2xl: 2.441rem; /* 39 */
+  --fs-3xl: clamp(2.441rem, 1.6rem + 3.4vw, 3.815rem); /* 39 -> 61 */
+  --fs-display: clamp(3rem, 1.4rem + 6.6vw, 7.45rem); /* 48 -> 119 */
+
+  --lh-tight: 1.04;
+  --lh-snug: 1.22;
+  --lh-body: 1.6;
+  --tracking-wordmark: 0.34em;
+  --tracking-signature: 0.42em;
+  --tracking-display: -0.01em;
+  --measure: 66ch; /* max line length for body copy */
+
+  /* ---- Space (4px grid) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+  --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem); /* page side padding */
+  /* Outer margin of the shell: the header lines up with it, and the showroom
+     grid is centred inside the same box. */
+  --shell-pad: clamp(1.25rem, 3.4vw, 3.25rem);
+  --page-max: 1440px;
+
+  /* ---- Shape ---- */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+  --chamfer: 10px; /* cut-corner size used by .k-chamfer (echoes the Tektur letterforms) */
+
+  /* ---- Motion (mirrored in src/lib/motion.ts) ---- */
+  --dur-instant: 90ms;
+  --dur-fast: 180ms;
+  --dur-base: 320ms;
+  --dur-slow: 560ms;
+  --dur-page: 420ms;
+  --dur-camera: 1320ms;
+  --dur-sweep: 1400ms;
+  --dur-intro: 2600ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.55, 0, 0.75, 0.2);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-camera: cubic-bezier(0.62, 0, 0.14, 1);
+  --ease-light: cubic-bezier(0.3, 0, 0.1, 1);
+
+  /* ---- Layers (z-index). Owner in brackets. ---- */
+  --z-stage: 0; /* [B] #k-stage, fixed full-viewport showroom */
+  --z-pages: 10; /* [A/D] #k-pages, scrolling editorial pages + footer */
+  --z-detail: 20; /* [C] #k-detail, product info panel layer (pointer-events: none on root) */
+  --z-nav: 40; /* [A] #k-nav */
+  --z-menu: 45; /* [A] compact menu sheet */
+  --z-cart: 60; /* [C] #k-cart, drawer + scrim */
+  --z-intro: 100; /* [A] #k-intro */
+  --z-skip: 110; /* [A] skip link */
+
+  /* ---- Shell metrics ---- */
+  --nav-h: 56px;
+  --focus-ring: 0 0 0 2px var(--navy-900), 0 0 0 4px var(--led-core);
+}
+
+@media (max-width: 759.98px) {
+  :root {
+    --nav-h: 50px;
+    --chamfer: 8px;
+  }
+}
+
+/* Under reduced motion, every token-driven duration collapses. Movement must
+   not be used; short opacity fades (<= 200ms) are acceptable. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0ms;
+    --dur-fast: 120ms;
+    --dur-base: 160ms;
+    --dur-slow: 200ms;
+    --dur-page: 160ms;
+    --dur-camera: 200ms;
+    --dur-sweep: 0ms;
+    --dur-intro: 350ms;
+  }
+}
